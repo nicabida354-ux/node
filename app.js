@@ -219,16 +219,18 @@ let routePolyline = null;
 let routeCorridorPolygon = null;
 let checkpointMarkers = [];
 let currentTileLayer = null;
+let currentTileRefLayer = null;
 let currentTileMode = 'dark'; // 'dark' (default cyber dark tactical) | 'sat' | 'googleStreet' | 'street'
 
-// Verified High-Tech Tile Sources (100% Free, Zero API Keys, Worldwide)
+// Verified High-Tech Tile Sources (100% Free, Zero API Keys, Zero Watermarks, Worldwide)
 const TILE_CONFIG = {
-  // 1. Tactical Cyber Dark (CartoDB Dark Matter - High Contrast Neon Lines, Obsidian Base & Crisp Labels)
+  // 1. Tactical Cyber Dark (Esri World Dark Gray Canvas: 100% Free, No Watermark, No API Key, Clean Slate Base & Reference Labels)
   dark: {
-    name: 'Táctico Oscuro Cyber',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    maxZoom: 20,
-    subdomains: 'abcd'
+    name: 'Táctico Cyber (Modo Oscuro)',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    refUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+    maxZoom: 19,
+    subdomains: 'abc'
   },
   // 2. Google / Esri Street Navigation: Full color streets, avenues, borders, cities worldwide
   googleStreet: {
@@ -1139,7 +1141,7 @@ function setUserGpsMarker(lat, lng) {
   userGpsMarker.openPopup();
 }
 
-// Clean, 100% Free World Tile Switcher without API keys
+// Clean, 100% Free World Tile Switcher without API keys or watermarks
 function updateMapTiles(requestedMode = null) {
   if (!map) return;
   if (requestedMode && TILE_CONFIG[requestedMode]) {
@@ -1147,16 +1149,34 @@ function updateMapTiles(requestedMode = null) {
   }
   localStorage.setItem('rhino_map_tile_mode', currentTileMode);
 
+  // Cleanly remove any previous tile layers
   if (currentTileLayer) {
     map.removeLayer(currentTileLayer);
+    currentTileLayer = null;
+  }
+  if (currentTileRefLayer) {
+    map.removeLayer(currentTileRefLayer);
+    currentTileRefLayer = null;
   }
 
   const config = TILE_CONFIG[currentTileMode] || TILE_CONFIG.dark;
 
+  // 1. Add Base Tile Layer
   currentTileLayer = L.tileLayer(config.url, {
-    maxZoom: config.maxZoom,
-    subdomains: config.subdomains || 'abc'
+    maxZoom: config.maxZoom || 19,
+    subdomains: config.subdomains || 'abc',
+    attribution: ''
   }).addTo(map);
+
+  // 2. Add Reference Labels Layer if defined (e.g. for Dark Tactical Mode)
+  if (config.refUrl) {
+    currentTileRefLayer = L.tileLayer(config.refUrl, {
+      maxZoom: config.maxZoom || 19,
+      subdomains: config.subdomains || 'abc',
+      attribution: ''
+    }).addTo(map);
+    currentTileRefLayer.bringToBack();
+  }
 
   currentTileLayer.bringToBack();
 
