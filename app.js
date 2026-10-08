@@ -226,7 +226,7 @@ let currentTileMode = 'dark'; // 'dark' (default cyber dark tactical) | 'sat' | 
 const TILE_CONFIG = {
   // 1. Tactical Cyber Dark (Esri World Dark Gray Canvas: 100% Free, No Watermark, No API Key, Clean Slate Base & Reference Labels)
   dark: {
-    name: 'Táctico Cyber (Modo Oscuro)',
+    name: '3D Oscuro Gris Táctico (Esri Canvas)',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
     refUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
     maxZoom: 19,
@@ -239,10 +239,11 @@ const TILE_CONFIG = {
     maxZoom: 19,
     subdomains: 'abc'
   },
-  // 3. High-Res Satellite HD (Google Earth Style)
+  // 3. High-Res Satellite HD (Esri World Imagery + Boundaries/Places Reference)
   sat: {
-    name: 'Satelital HD Órbita',
+    name: '3D Vista Satelital HD (Esri World Imagery)',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    refUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
     maxZoom: 19,
     subdomains: 'abc'
   },
@@ -474,6 +475,8 @@ const Globe3D = {
   animId: null,
   isDescending: false,
   isInitialized: false,
+  globeTextureMode: 'dark',
+  cachedTextures: {},
 
   init() {
     const container = document.getElementById('globe-3d-container');
@@ -554,19 +557,8 @@ const Globe3D = {
     this.earthMesh = new THREE.Mesh(earthGeo, earthMat);
     this.scene.add(this.earthMesh);
 
-    // Try loading HD NASA night satellite texture seamlessly
-    const texLoader = new THREE.TextureLoader();
-    texLoader.load(
-      'https://unpkg.com/three-globe/example/img/earth-night.jpg',
-      (hdTex) => {
-        if (this.earthMesh) {
-          this.earthMesh.material.map = hdTex;
-          this.earthMesh.material.needsUpdate = true;
-        }
-      },
-      undefined,
-      (err) => console.log('Utilizando mapa base procedural 3D')
-    );
+    // Initial high-tech 3D globe texture load (3D Oscuro Gris Táctico por defecto)
+    this.applyGlobeTexture('dark');
 
     // 6. Glowing Atmosphere Layer
     const atmosGeo = new THREE.SphereGeometry(5.09, 64, 64);
@@ -847,6 +839,43 @@ const Globe3D = {
     if (typeof callback === 'function') callback();
   },
 
+  toggleGlobeTexture() {
+    const nextMode = this.globeTextureMode === 'dark' ? 'sat' : 'dark';
+    this.applyGlobeTexture(nextMode);
+  },
+
+  applyGlobeTexture(mode) {
+    this.globeTextureMode = mode;
+    const btnText = document.getElementById('globe-style-btn-text');
+    if (btnText) {
+      btnText.innerText = mode === 'dark' ? '3D OSCURO GRIS' : '3D SATELITAL HD';
+    }
+
+    const texUrl = mode === 'dark'
+      ? 'https://unpkg.com/three-globe/example/img/earth-night.jpg'
+      : 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
+
+    if (this.cachedTextures[mode] && this.earthMesh) {
+      this.earthMesh.material.map = this.cachedTextures[mode];
+      this.earthMesh.material.needsUpdate = true;
+      return;
+    }
+
+    const texLoader = new THREE.TextureLoader();
+    texLoader.load(
+      texUrl,
+      (tex) => {
+        this.cachedTextures[mode] = tex;
+        if (this.earthMesh) {
+          this.earthMesh.material.map = tex;
+          this.earthMesh.material.needsUpdate = true;
+        }
+      },
+      undefined,
+      (err) => console.log('Utilizando mapa base procedural 3D')
+    );
+  },
+
   resetOrbit() {
     if (this.controls) {
       this.controls.enabled = true;
@@ -870,6 +899,11 @@ function transitionToSurface2D(targetCoords = [-34.5770, -58.4005], zoomLevel = 
   const surfaceSelect = document.getElementById('surface-country-select');
   if (globeSelect && c.code && GLOBAL_COUNTRIES[c.code]) globeSelect.value = c.code;
   if (surfaceSelect && c.code && GLOBAL_COUNTRIES[c.code]) surfaceSelect.value = c.code;
+
+  // Immediately deploy fleet, localized route & telemetry to target country
+  if (c.code && GLOBAL_COUNTRIES[c.code]) {
+    deployFleetToCountry(c.code);
+  }
 
   // Update scope navigation buttons
   document.querySelectorAll('.scope-btn').forEach(btn => btn.classList.remove('active'));
@@ -1168,18 +1202,16 @@ function updateMapTiles(requestedMode = null) {
     subdomains: config.subdomains || 'abc',
     attribution: ''
   }).addTo(map);
+  currentTileLayer.bringToBack();
 
-  // 2. Add Reference Labels Layer if defined (e.g. for Dark Tactical Mode)
+  // 2. Add Reference Labels Layer if defined (e.g. for Dark Tactical Mode or Sat mode)
   if (config.refUrl) {
     currentTileRefLayer = L.tileLayer(config.refUrl, {
       maxZoom: config.maxZoom || 19,
       subdomains: config.subdomains || 'abc',
       attribution: ''
     }).addTo(map);
-    currentTileRefLayer.bringToBack();
   }
-
-  currentTileLayer.bringToBack();
 
   // Sync Dropdown Select
   const selectEl = document.getElementById('map-tile-style-select');
@@ -1222,6 +1254,28 @@ function toggleMapTheme() {
   }
 }
 
+function toggle3DTilt() {
+  const mapWrapper = document.querySelector('.map-wrapper');
+  const btn = document.getElementById('btn-toggle-3d-tilt');
+  if (!mapWrapper) return;
+
+  const is3D = mapWrapper.classList.toggle('mode-3d-tilt');
+  if (btn) {
+    btn.classList.toggle('active', is3D);
+    btn.innerHTML = is3D
+      ? `<i class="fa-solid fa-cube text-cyan"></i> <span>3D ON</span>`
+      : `<i class="fa-solid fa-cube text-cyan"></i> <span>3D</span>`;
+  }
+
+  if (map) {
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 150);
+  }
+
+  showNotification(is3D ? '🧊 Perspectiva 3D Táctica Activada' : '📐 Vista Cenital 2D Restaurada', 'info');
+}
+
 function deployFleetToCountry(countryCode) {
   const c = GLOBAL_COUNTRIES[countryCode];
   if (!c) return;
@@ -1229,6 +1283,12 @@ function deployFleetToCountry(countryCode) {
   state.selectedCountryCode = countryCode;
   const lat = c.lat;
   const lng = c.lng;
+
+  // Sync both country dropdown selectors
+  const globeSelect = document.getElementById('globe-country-select');
+  const surfaceSelect = document.getElementById('surface-country-select');
+  if (globeSelect && globeSelect.value !== countryCode) globeSelect.value = countryCode;
+  if (surfaceSelect && surfaceSelect.value !== countryCode) surfaceSelect.value = countryCode;
 
   const newRouteId = `patrulla-${c.code.toLowerCase()}`;
   const routeName = `Corredor Seguro ${c.name} (${c.capital})`;
@@ -1292,6 +1352,7 @@ function deployFleetToCountry(countryCode) {
   drawActiveRoute();
   renderVehicleMarkers();
   updateGeoOrientationHUD(`${c.name} • ${c.capital}`);
+  updateTelemetryDisplay(getSelectedVehicle());
 
   addAlertItem({
     title: `FLOTA TRASLADADA A ${c.name.toUpperCase()}`,
@@ -2730,6 +2791,9 @@ function setupEventListeners() {
     globeCountrySelect.addEventListener('change', (e) => {
       const code = e.target.value;
       state.selectedCountryCode = code;
+      const surfaceSelect = document.getElementById('surface-country-select');
+      if (surfaceSelect) surfaceSelect.value = code;
+
       const c = GLOBAL_COUNTRIES[code];
       if (c && Globe3D.camera) {
         const targetPos = latLngToVector3(c.lat, c.lng, 12.0);
@@ -2752,19 +2816,20 @@ function setupEventListeners() {
     });
   }
 
-  // 2D Surface Country Selector Dropdown
+  // 3D Globe Texture Toggle Button (3D Oscuro Gris Táctico / 3D Satelital HD)
+  const globeStyleBtn = document.getElementById('btn-toggle-globe-style');
+  if (globeStyleBtn) {
+    globeStyleBtn.addEventListener('click', () => {
+      Globe3D.toggleGlobeTexture();
+    });
+  }
+
+  // 2D Surface Country Selector Dropdown (Immediately deploys fleet to selected country)
   const surfaceCountrySelect = document.getElementById('surface-country-select');
   if (surfaceCountrySelect) {
     surfaceCountrySelect.addEventListener('change', (e) => {
       const code = e.target.value;
-      const c = GLOBAL_COUNTRIES[code];
-      if (c && map) {
-        state.selectedCountryCode = code;
-        map.flyTo([c.lat, c.lng], c.zoom || 13, { duration: 1.5 });
-        updateGeoOrientationHUD(`${c.name} • ${c.capital}`);
-        const breadcrumb = document.getElementById('map-location-breadcrumb');
-        if (breadcrumb) breadcrumb.innerHTML = `📍 ${c.capital}, ${c.name} &bull; ${c.continent}`;
-      }
+      deployFleetToCountry(code);
     });
   }
 
@@ -2777,12 +2842,18 @@ function setupEventListeners() {
     });
   }
 
-  // Map Tile Style Selector (Google Street / Sat / OSM / Dark)
+  // Map Tile Style Selector (3D Oscuro Gris / 3D Satelital HD / OSM / Claro)
   const mapTileSelect = document.getElementById('map-tile-style-select');
   if (mapTileSelect) {
     mapTileSelect.addEventListener('change', (e) => {
       updateMapTiles(e.target.value);
     });
+  }
+
+  // Dedicated 3D Map Perspective Tilt Button (rotateX 46° pitch & depth horizon)
+  const tilt3DBtn = document.getElementById('btn-toggle-3d-tilt');
+  if (tilt3DBtn) {
+    tilt3DBtn.addEventListener('click', toggle3DTilt);
   }
 
   // Dedicated Map Dark / Light Mode Toggle Button

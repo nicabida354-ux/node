@@ -438,6 +438,9 @@
             <button class="btn-enter-surface" id="btn-descend-to-surface">
               <i class="fa-solid fa-plane-arrival"></i> <span>ENTRAR AL PAÍS (MODO PLANO 2D)</span>
             </button>
+            <button class="btn-globe-style-toggle" id="btn-toggle-globe-style" title="Alternar Textura 3D del Planeta: Oscuro Gris Táctico / Satelital HD">
+              <i class="fa-solid fa-satellite text-cyan"></i> <span id="globe-style-btn-text">3D OSCURO GRIS</span>
+            </button>
           </div>
 
           <div class="globe-click-hint">
@@ -496,11 +499,14 @@
               </button>
 
               <select id="map-tile-style-select" class="tactical-layer-select" title="Estilo y Capa del Mapa">
-                <option value="dark" selected>🌑 Táctico Cyber (Modo Oscuro)</option>
+                <option value="dark" selected>🌑 3D Oscuro Gris Táctico (Esri Canvas)</option>
+                <option value="sat">🛰️ 3D Vista Satelital HD (Esri World Imagery)</option>
                 <option value="googleStreet">🗺️ Callejero Claro (Modo Claro)</option>
-                <option value="sat">🛰️ Satelital HD Órbita</option>
                 <option value="street">🌐 OpenStreetMap</option>
               </select>
+              <button class="map-btn btn-3d-tilt" id="btn-toggle-3d-tilt" title="Alternar Perspectiva 3D Táctica (Inclinación de Cámara 3D)">
+                <i class="fa-solid fa-cube text-cyan"></i> <span>3D</span>
+              </button>
               <button class="map-btn" id="btn-recenter" title="Re-centrar en el vehículo">
                 <i class="fa-solid fa-crosshairs"></i>
               </button>
