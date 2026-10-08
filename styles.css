@@ -1038,7 +1038,17 @@ body.light-theme .btn-view-mode.active {
   gap: 12px;
   pointer-events: none;
   animation: fadeInDown 0.4s ease;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.globe-hud-overlay.hud-hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.globe-hud-overlay.hud-hidden * {
+  pointer-events: none !important;
 }
 
 .globe-hud-badge {

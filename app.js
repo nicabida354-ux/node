@@ -508,7 +508,8 @@ const Globe3D = {
       this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.06;
-      this.controls.minDistance = 5.3;
+      this.controls.enablePan = false; // Strictly anchor orbit target to (0, 0, 0)
+      this.controls.minDistance = 7.0; // Prevent camera from smashing into blurry globe texture
       this.controls.maxDistance = 24.0;
       this.controls.autoRotate = true;
       this.controls.autoRotateSpeed = 0.5;
@@ -518,11 +519,36 @@ const Globe3D = {
         this.controls.autoRotate = false;
       });
 
-      // Check distance for descent trigger
+      // Check distance for dynamic HUD opacity and automatic descent into surface map
       this.controls.addEventListener('change', () => {
+        if (state.currentViewMode !== 'globe-3d') return;
         const dist = this.camera.position.distanceTo(this.controls.target);
-        if (dist <= 6.0 && !this.isDescending && state.currentViewMode === 'globe-3d') {
-          this.descendToSurface(() => transitionToSurface2D());
+
+        // Dynamically fade HUD overlay as camera approaches the Earth
+        const globeHUD = document.getElementById('globe-hud-overlay');
+        if (globeHUD) {
+          const hudAlpha = Math.max(0, Math.min(1, (dist - 8.5) / 2.2));
+          globeHUD.style.opacity = hudAlpha.toFixed(2);
+          if (hudAlpha < 0.2) {
+            globeHUD.classList.add('hud-hidden');
+            globeHUD.style.pointerEvents = 'none';
+          } else {
+            globeHUD.classList.remove('hud-hidden');
+            globeHUD.style.pointerEvents = 'auto';
+          }
+        }
+
+        // Automatic descent into surface map when zooming close to Earth
+        if (dist <= 8.6 && !this.isDescending) {
+          const ray = new THREE.Raycaster();
+          ray.setFromCamera(new THREE.Vector2(0, 0), this.camera);
+          const hits = ray.intersectObject(this.earthMesh);
+          if (hits.length > 0) {
+            const coords = vector3ToLatLng(hits[0].point, 5.0);
+            this.descendToCoords(coords.lat, coords.lng);
+          } else {
+            this.descendToCountry(state.selectedCountryCode || 'ARG');
+          }
         }
       });
     }
@@ -721,6 +747,57 @@ const Globe3D = {
       }
     });
 
+    // Double-click to descend directly into targeted spot
+    container.addEventListener('dblclick', (e) => {
+      if (state.currentViewMode !== 'globe-3d' || this.isDescending) return;
+      const rect = container.getBoundingClientRect();
+      const m = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      const ray = new THREE.Raycaster();
+      ray.setFromCamera(m, this.camera);
+      const hits = ray.intersectObject(this.earthMesh);
+      if (hits.length > 0) {
+        const coords = vector3ToLatLng(hits[0].point, 5.0);
+        this.descendToCoords(coords.lat, coords.lng);
+      }
+    });
+
+    // Mouse wheel zoom gesture: When scrolling forward (inwards towards Earth)
+    // seamlessly transition down into the surface map!
+    const handleGlobeWheel = (e) => {
+      if (state.currentViewMode !== 'globe-3d' || this.isDescending) return;
+      const dist = this.camera.position.distanceTo(this.controls ? this.controls.target : new THREE.Vector3(0, 0, 0));
+
+      // If scrolling in towards Earth and already getting close (dist <= 9.4)
+      if (e.deltaY < 0 && dist <= 9.4) {
+        const rect = container.getBoundingClientRect();
+        const m = new THREE.Vector2(
+          ((e.clientX - rect.left) / rect.width) * 2 - 1,
+          -((e.clientY - rect.top) / rect.height) * 2 + 1
+        );
+        const ray = new THREE.Raycaster();
+        ray.setFromCamera(m, this.camera);
+        let hits = ray.intersectObject(this.earthMesh);
+        if (!hits.length) {
+          ray.setFromCamera(new THREE.Vector2(0, 0), this.camera);
+          hits = ray.intersectObject(this.earthMesh);
+        }
+
+        if (hits.length > 0) {
+          const coords = vector3ToLatLng(hits[0].point, 5.0);
+          this.descendToCoords(coords.lat, coords.lng);
+        } else {
+          this.descendToCountry(state.selectedCountryCode || 'ARG');
+        }
+      }
+    };
+
+    container.addEventListener('wheel', handleGlobeWheel, { passive: true });
+    const hudEl = document.getElementById('globe-hud-overlay');
+    if (hudEl) hudEl.addEventListener('wheel', handleGlobeWheel, { passive: true });
+
     // 11. Window Resize Listener
     window.addEventListener('resize', () => this.onResize());
 
@@ -791,7 +868,7 @@ const Globe3D = {
     }
   },
 
-  descendToCoords(lat, lng, customCountry = null) {
+  descendToCoords(lat, lng, customCountry = null, callback = null) {
     if (this.isDescending) return;
     this.isDescending = true;
 
@@ -801,7 +878,15 @@ const Globe3D = {
     }
 
     const c = customCountry || getClosestCountry(lat, lng);
-    state.selectedCountryCode = c.code || 'GEO';
+    state.selectedCountryCode = c.code || 'ARG';
+
+    // Instantly hide HUD overlay so it never blocks the screen during dive
+    const globeHUD = document.getElementById('globe-hud-overlay');
+    if (globeHUD) {
+      globeHUD.style.opacity = '0';
+      globeHUD.classList.add('hud-hidden');
+      globeHUD.style.pointerEvents = 'none';
+    }
 
     // Target position: Skimming atmosphere directly above target coordinates
     const targetPos = latLngToVector3(lat, lng, 5.0);
@@ -810,7 +895,7 @@ const Globe3D = {
 
     const startPos = this.camera.position.clone();
     const startTime = performance.now();
-    const duration = 850; // ms
+    const duration = 750; // ms smooth dive
 
     const stepDescent = () => {
       const elapsed = performance.now() - startTime;
@@ -826,21 +911,21 @@ const Globe3D = {
         this.isDescending = false;
         if (this.controls) this.controls.enabled = true;
         transitionToSurface2D([lat, lng], c.zoom || 13, c);
+        if (typeof callback === 'function') callback();
       }
     };
 
     requestAnimationFrame(stepDescent);
   },
 
-  descendToCountry(countryCode) {
+  descendToCountry(countryCode, callback = null) {
     const c = GLOBAL_COUNTRIES[countryCode] || GLOBAL_COUNTRIES.ARG;
-    this.descendToCoords(c.lat, c.lng, c);
+    this.descendToCoords(c.lat, c.lng, c, callback);
   },
 
-  descendToSurface(callback) {
+  descendToSurface(callback = null) {
     const c = GLOBAL_COUNTRIES[state.selectedCountryCode] || GLOBAL_COUNTRIES.ARG;
-    this.descendToCoords(c.lat, c.lng, c);
-    if (typeof callback === 'function') callback();
+    this.descendToCoords(c.lat, c.lng, c, callback);
   },
 
   toggleGlobeTexture() {
@@ -886,8 +971,19 @@ const Globe3D = {
       this.controls.autoRotate = true;
       this.controls.target.set(0, 0, 0);
     }
-    this.camera.position.set(2.8, 1.4, 11.2);
+    const c = GLOBAL_COUNTRIES[state.selectedCountryCode] || GLOBAL_COUNTRIES.ARG;
+    const targetPos = latLngToVector3(c.lat, c.lng, 11.5);
+    this.camera.position.set(targetPos.x, targetPos.y, targetPos.z);
     this.camera.lookAt(0, 0, 0);
+    if (this.controls) {
+      this.controls.update();
+    }
+    const globeHUD = document.getElementById('globe-hud-overlay');
+    if (globeHUD) {
+      globeHUD.classList.remove('hud-hidden');
+      globeHUD.style.opacity = '1';
+      globeHUD.style.pointerEvents = 'auto';
+    }
   }
 };
 
