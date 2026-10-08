@@ -982,7 +982,8 @@ function initMap() {
 
   L.control.zoom({ position: 'topright' }).addTo(map);
 
-  updateMapTiles();
+  const isLightTheme = document.getElementById('app-body')?.classList.contains('light-theme');
+  updateMapTiles(isLightTheme ? 'googleStreet' : 'dark');
   map.on('click', onMapClick);
 
   // When zooming out completely in 2D mode (zoom <= 2), exit planet back to 3D Orbit!
@@ -1302,11 +1303,12 @@ function deployFleetToCountry(countryCode) {
 // --- Theme System (Dark Flúor / Light Minimalist) ---
 function initTheme() {
   const savedTheme = localStorage.getItem('rhino_theme') || 'dark';
-  const savedMapTile = localStorage.getItem('rhino_map_tile_mode');
-  if (savedMapTile && TILE_CONFIG[savedMapTile]) {
-    currentTileMode = savedMapTile;
+  // If the dashboard is dark (or on startup), guarantee dark map mode!
+  if (savedTheme !== 'light') {
+    currentTileMode = 'dark';
+    localStorage.setItem('rhino_map_tile_mode', 'dark');
   } else {
-    currentTileMode = savedTheme === 'light' ? 'googleStreet' : 'dark';
+    currentTileMode = 'googleStreet';
   }
   applyTheme(savedTheme, false);
 }
@@ -1321,7 +1323,7 @@ function applyTheme(theme, syncMap = true) {
     body.classList.add('light-theme');
     if (icon) icon.className = 'fa-solid fa-moon text-cyan';
     if (label) label.innerText = 'TEMA OSCURO';
-    if (syncMap && currentTileMode === 'dark') {
+    if (syncMap) {
       currentTileMode = 'googleStreet';
     }
   } else {
@@ -1329,7 +1331,7 @@ function applyTheme(theme, syncMap = true) {
     body.classList.remove('light-theme');
     if (icon) icon.className = 'fa-solid fa-sun text-amber';
     if (label) label.innerText = 'TEMA CLARO';
-    if (syncMap && (currentTileMode === 'googleStreet' || currentTileMode === 'street')) {
+    if (syncMap) {
       currentTileMode = 'dark';
     }
   }
@@ -1342,6 +1344,67 @@ function toggleTheme() {
   const body = document.getElementById('app-body');
   const isLight = body.classList.contains('light-theme');
   applyTheme(isLight ? 'dark' : 'light', true);
+}
+
+// --- View Modes System (Cabina Completa / Solo Mapa / Solo Cámara) ---
+let currentDashboardViewMode = 'full'; // 'full' | 'map' | 'cam'
+
+function initDashboardViewMode() {
+  const savedMode = localStorage.getItem('rhino_view_mode') || 'full';
+  setDashboardViewMode(savedMode, false);
+}
+
+function setDashboardViewMode(mode, showToast = true) {
+  const grid = document.getElementById('dashboard-grid');
+  if (!grid) return;
+
+  currentDashboardViewMode = mode;
+  grid.classList.remove('view-mode-map', 'view-mode-cam');
+
+  // Update Buttons active states
+  const btnFull = document.getElementById('btn-view-full');
+  const btnMap = document.getElementById('btn-view-map-only');
+  const btnCam = document.getElementById('btn-view-cam-only');
+  const btnExpandMap = document.getElementById('btn-map-expand-solo');
+  const btnExpandCam = document.getElementById('btn-cam-expand-solo');
+
+  if (btnFull) btnFull.classList.toggle('active', mode === 'full');
+  if (btnMap) btnMap.classList.toggle('active', mode === 'map');
+  if (btnCam) btnCam.classList.toggle('active', mode === 'cam');
+
+  if (btnExpandMap) {
+    btnExpandMap.innerHTML = mode === 'map' ? '<i class="fa-solid fa-compress"></i>' : '<i class="fa-solid fa-expand"></i>';
+    btnExpandMap.title = mode === 'map' ? 'Restaurar cabina completa' : 'Despejar y ver solo el mapa';
+  }
+  if (btnExpandCam) {
+    btnExpandCam.innerHTML = mode === 'cam' ? '<i class="fa-solid fa-compress"></i> <span>RESTAURAR</span>' : '<i class="fa-solid fa-expand"></i> <span>SOLO CÁMARA</span>';
+    btnExpandCam.title = mode === 'cam' ? 'Restaurar cabina completa' : 'Despejar y ver solo la cámara';
+  }
+
+  if (mode === 'map') {
+    grid.classList.add('view-mode-map');
+    if (showToast) showNotification('🗺️ Interfaz despejada: Vista de SOLO MAPA', 'info');
+  } else if (mode === 'cam') {
+    grid.classList.add('view-mode-cam');
+    if (showToast) showNotification('👁️ Interfaz despejada: Vista de SOLO CÁMARA ESPÍA', 'info');
+  } else {
+    if (showToast) showNotification('🔲 Cabina completa restaurada', 'info');
+  }
+
+  localStorage.setItem('rhino_view_mode', mode);
+
+  // Resize Leaflet Map to fill new width
+  setTimeout(() => {
+    if (map) {
+      map.invalidateSize();
+    }
+    // Resize spycam canvas if in cam mode
+    const canvas = document.getElementById('camera-canvas');
+    if (canvas && canvas.parentElement) {
+      canvas.width = canvas.parentElement.clientWidth || 380;
+      canvas.height = canvas.parentElement.clientHeight || 215;
+    }
+  }, 100);
 }
 
 // Draw polyline and buffer corridor
@@ -2400,6 +2463,35 @@ function handlePairingSubmit(e) {
 
 // --- Setup Event Listeners ---
 function setupEventListeners() {
+  // View Mode Selectors (Cabina Completa / Solo Mapa / Solo Cámara)
+  const btnViewFull = document.getElementById('btn-view-full');
+  if (btnViewFull) btnViewFull.addEventListener('click', () => setDashboardViewMode('full'));
+
+  const btnViewMap = document.getElementById('btn-view-map-only');
+  if (btnViewMap) btnViewMap.addEventListener('click', () => setDashboardViewMode('map'));
+
+  const btnViewCam = document.getElementById('btn-view-cam-only');
+  if (btnViewCam) btnViewCam.addEventListener('click', () => setDashboardViewMode('cam'));
+
+  const btnMapExpandSolo = document.getElementById('btn-map-expand-solo');
+  if (btnMapExpandSolo) {
+    btnMapExpandSolo.addEventListener('click', () => {
+      setDashboardViewMode(currentDashboardViewMode === 'map' ? 'full' : 'map');
+    });
+  }
+
+  const btnCamExpandSolo = document.getElementById('btn-cam-expand-solo');
+  if (btnCamExpandSolo) {
+    btnCamExpandSolo.addEventListener('click', () => {
+      setDashboardViewMode(currentDashboardViewMode === 'cam' ? 'full' : 'cam');
+    });
+  }
+
+  const btnRestoreFloating = document.getElementById('btn-restore-view-floating');
+  if (btnRestoreFloating) {
+    btnRestoreFloating.addEventListener('click', () => setDashboardViewMode('full'));
+  }
+
   // Sound toggle
   const soundBtn = document.getElementById('btn-toggle-sound');
   const soundIcon = document.getElementById('sound-icon');
@@ -2998,6 +3090,7 @@ function openDispatchModal(veh, reason = 'DESVÍO DE CORREDOR AUTORIZADO') {
 // --- Main Init ---
 window.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  initDashboardViewMode();
   initMap();
   Globe3D.init();
   initCameraCanvas();

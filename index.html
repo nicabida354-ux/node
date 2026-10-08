@@ -83,6 +83,19 @@
 
     <!-- Right Controls -->
     <div class="header-actions">
+      <!-- Layout Mode Selector: Despejar para ver SOLO MAPA o SOLO CÁMARA -->
+      <div class="view-mode-dock" id="view-mode-dock">
+        <button class="btn-view-mode active" id="btn-view-full" title="Vista completa: Flota, Mapa y Cámara simultáneos">
+          <i class="fa-solid fa-table-columns"></i> <span>CABINA</span>
+        </button>
+        <button class="btn-view-mode" id="btn-view-map-only" title="Despejar interfaz y ver SOLO EL MAPA">
+          <i class="fa-solid fa-map-location-dot text-cyan"></i> <span>SOLO MAPA</span>
+        </button>
+        <button class="btn-view-mode" id="btn-view-cam-only" title="Despejar interfaz y ver SOLO LA CÁMARA">
+          <i class="fa-solid fa-video text-amber"></i> <span>SOLO CÁMARA</span>
+        </button>
+      </div>
+
       <!-- CRT Holographic Scanlines Toggle -->
       <button class="btn-tactical btn-crt-toggle" id="btn-toggle-crt" title="Alternar Scanlines CRT Holográficas Cyber">
         <i class="fa-solid fa-tv"></i> <span id="crt-label">CRT SCAN</span>
@@ -104,7 +117,11 @@
   </header>
 
   <!-- Main Command Center Grid -->
-  <main class="dashboard-grid">
+  <main class="dashboard-grid" id="dashboard-grid">
+    <!-- Floating Quick Restore Button (visible only in Solo Mapa or Solo Cámara mode) -->
+    <button class="floating-restore-badge" id="btn-restore-view-floating" title="Volver a la vista completa de la cabina">
+      <i class="fa-solid fa-compress"></i> <span>RESTAURAR CABINA COMPLETA</span>
+    </button>
 
     <!-- LEFT SIDEBAR: Vehicles, Devices & Pairing Tree -->
     <aside class="sidebar-left" id="sidebar-left">
@@ -493,6 +510,9 @@
               <button class="map-btn" id="btn-toggle-checkpoints" title="Mostrar Checkpoints">
                 <i class="fa-solid fa-location-dot"></i>
               </button>
+              <button class="map-btn" id="btn-map-expand-solo" title="Despejar interfaz y ver solo el mapa a pantalla completa">
+                <i class="fa-solid fa-expand"></i>
+              </button>
             </div>
           </div>
 
@@ -567,7 +587,12 @@
             <i class="fa-solid fa-eye text-amber"></i>
             <h3>CÁMARA ESPÍA OCULTA</h3>
           </div>
-          <span class="live-rec-badge"><i class="fa-solid fa-circle"></i> REC</span>
+          <div class="cam-header-tools">
+            <button class="cam-solo-btn" id="btn-cam-expand-solo" title="Despejar interfaz y ver solo la cámara a pantalla completa">
+              <i class="fa-solid fa-expand"></i> <span>SOLO CÁMARA</span>
+            </button>
+            <span class="live-rec-badge"><i class="fa-solid fa-circle"></i> REC</span>
+          </div>
         </div>
 
         <!-- Video Simulation Screen with HUD -->
