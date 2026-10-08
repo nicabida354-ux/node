@@ -507,6 +507,9 @@
               <button class="map-btn btn-3d-tilt" id="btn-toggle-3d-tilt" title="Alternar Perspectiva 3D Táctica (Inclinación de Cámara 3D)">
                 <i class="fa-solid fa-cube text-cyan"></i> <span>3D</span>
               </button>
+              <button class="map-btn btn-buildings-3d" id="btn-toggle-3d-buildings" title="Activar/Desactivar Edificios 3D Volumétricos en Calles (Estilo Google Maps 3D)">
+                <i class="fa-solid fa-city text-cyan"></i> <span>EDIFICIOS 3D</span>
+              </button>
               <button class="map-btn" id="btn-recenter" title="Re-centrar en el vehículo">
                 <i class="fa-solid fa-crosshairs"></i>
               </button>
@@ -522,7 +525,7 @@
             </div>
           </div>
 
-          <!-- Second Row: Geo Scopes Navigator Floating Centered (3D PLANETA / REGIÓN / CIUDAD / VEHÍCULO / MI GPS) -->
+          <!-- Second Row: Geo Scopes Navigator Floating Centered (3D PLANETA / REGIÓN / CIUDAD / VEHÍCULO / NAVEGACIÓN 3D / MI GPS) -->
           <div class="geo-scope-bar-wrapper">
             <div class="geo-scope-bar">
               <button class="scope-btn" id="scope-btn-globe"
@@ -535,13 +538,55 @@
               <button class="scope-btn" id="scope-btn-city" title="Ver Ciudad">
                 <i class="fa-solid fa-city"></i> <span>CIUDAD</span>
               </button>
-              <button class="scope-btn active" id="scope-btn-veh" title="Seguir Vehículo en Calle (2D)">
+              <button class="scope-btn active" id="scope-btn-veh" title="Seguir Vehículo en Calle">
                 <i class="fa-solid fa-crosshairs"></i> <span>VEHÍCULO</span>
+              </button>
+              <button class="scope-btn btn-nav3d" id="scope-btn-nav3d" title="Navegación 3D Inmersiva: Cámara de seguimiento vehicular y faros nocturnos (Estilo Google Maps 3D)">
+                <i class="fa-solid fa-car-side text-cyan"></i> <span>NAVEGACIÓN 3D</span>
               </button>
               <button class="scope-btn btn-my-gps" id="scope-btn-my-gps" title="Ubicar Mi Dispositivo Actual (GPS)">
                 <i class="fa-solid fa-location-arrow"></i> <span>MI GPS</span>
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- Banner de Navegación 3D Turn-by-Turn (Estilo Google Maps 3D Inmersivo) -->
+        <div class="nav-turn-hud" id="nav-turn-hud">
+          <div class="nav-turn-left">
+            <div class="nav-turn-icon-box" id="nav-maneuver-icon-box">
+              <i class="fa-solid fa-arrow-turn-right" id="nav-maneuver-icon"></i>
+            </div>
+            <div class="nav-turn-distance-wrap">
+              <span class="nav-turn-dist" id="nav-maneuver-dist">140 m</span>
+              <span class="nav-turn-action" id="nav-maneuver-text">Girar a la derecha</span>
+            </div>
+          </div>
+
+          <div class="nav-turn-center">
+            <div class="nav-street-row">
+              <span class="nav-street-name" id="nav-current-street">Av. del Libertador</span>
+              <span class="nav-route-badge" id="nav-route-name">CORREDOR SEGURO</span>
+            </div>
+            <div class="nav-target-sub" id="nav-next-target">
+              Hacia: Base Central Retiro
+            </div>
+          </div>
+
+          <div class="nav-turn-right">
+            <div class="nav-speed-limit-badge" title="Límite de velocidad vial">
+              <span class="limit-val" id="nav-speed-limit">60</span>
+            </div>
+            <div class="nav-eta-box">
+              <span class="eta-time" id="nav-eta-time">3 min</span>
+              <span class="eta-dist" id="nav-eta-dist">1.4 km</span>
+            </div>
+            <button class="btn-nav-audio" id="btn-toggle-nav-voice" title="Activar/Silenciar Instrucciones de Voz">
+              <i class="fa-solid fa-volume-high text-cyan" id="nav-voice-icon"></i>
+            </button>
+            <button class="btn-nav-preview" id="btn-open-dest-preview" title="Previsualizar Edificio de Destino y Acceso (Street Preview)">
+              <i class="fa-solid fa-building-circle-check"></i> <span>DESTINO 3D</span>
+            </button>
           </div>
         </div>
 
@@ -895,6 +940,58 @@
       </div>
       <div class="modal-footer">
         <button class="btn-tactical btn-secondary" id="btn-close-esp32-code-footer">Cerrar</button>
+      </div>
+    </div>
+  <!-- MODAL: Previsualización 3D del Edificio de Destino y Acceso (Google Maps Street Preview) -->
+  <div class="modal-overlay" id="dest-preview-modal">
+    <div class="modal-card dest-preview-card">
+      <div class="modal-header">
+        <div class="dest-card-title">
+          <i class="fa-solid fa-building-circle-check text-cyan"></i>
+          <div>
+            <h3>DESTINO Y EDIFICIO DE LLEGADA 3D</h3>
+            <p class="subtitle" id="dest-modal-subtitle">Inspección Táctica de Acceso y Perímetro Urbano</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btn-close-dest-preview">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="dest-visual-box">
+          <div class="dest-hologram-grid"></div>
+          <div class="dest-building-silhouette">
+            <i class="fa-solid fa-warehouse dest-building-icon"></i>
+            <div class="dest-scan-line"></div>
+          </div>
+          <div class="dest-badge-corner" id="dest-building-type">HANGAR LOGÍSTICO // ZONA SEGURA</div>
+          <div class="dest-beacon-pulse"></div>
+        </div>
+
+        <div class="dest-info-grid">
+          <div class="dest-info-item">
+            <span class="d-label">PUNTO DE LLEGADA:</span>
+            <span class="d-val text-cyan" id="dest-place-name">Hangar Central Base Retiro</span>
+          </div>
+          <div class="dest-info-item">
+            <span class="d-label">ACCESO VEHICULAR:</span>
+            <span class="d-val text-green" id="dest-access-gate">Portón Norte #03 (Barrera RFID)</span>
+          </div>
+          <div class="dest-info-item">
+            <span class="d-label">COORDENADAS EXACTAS:</span>
+            <span class="d-val font-mono text-cyan" id="dest-coords">-34.5620° S, -58.4210° O</span>
+          </div>
+          <div class="dest-info-item">
+            <span class="d-label">ESTADO DE PERÍMETRO:</span>
+            <span class="d-val text-green"><i class="fa-solid fa-shield-halved"></i> CUSTODIADO // SEGURO</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer dest-card-footer">
+        <span class="dest-note"><i class="fa-solid fa-circle-info text-cyan"></i> La navegación inmersiva 3D guía al vehículo directo al carril de ingreso autorizado.</span>
+        <button class="btn-tactical btn-primary" id="btn-dest-ack">
+          <i class="fa-solid fa-check"></i> ENTENDIDO
+        </button>
       </div>
     </div>
   </div>

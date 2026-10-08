@@ -3245,3 +3245,471 @@ body.light-theme .btn-secondary {
     padding: 5px 10px;
   }
 }
+
+/* =====================================================================
+   GOOGLE MAPS 3D INMERSIVE NAVIGATION & 3D BUILDINGS SYSTEM
+   ===================================================================== */
+
+/* Modo Navegación 3D Inmersiva (Estilo Google Maps 3D) */
+.map-wrapper.mode-inmersive-3d #tactical-map {
+  transform: rotateX(54deg) translateY(-45px) scale(1.24);
+  transform-origin: center bottom;
+  box-shadow: 0 50px 100px rgba(0, 0, 0, 0.98);
+}
+
+.map-wrapper.mode-inmersive-3d::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: linear-gradient(to bottom, rgba(2, 6, 23, 0.92) 0%, rgba(2, 6, 23, 0.45) 55%, transparent 100%);
+  pointer-events: none;
+  z-index: 15;
+}
+
+.map-btn.btn-buildings-3d {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0 10px;
+  width: auto;
+  gap: 6px;
+}
+
+.map-btn.btn-buildings-3d.active {
+  background: rgba(0, 240, 255, 0.22);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.5);
+}
+
+.scope-btn.btn-nav3d.active {
+  background: rgba(0, 255, 163, 0.22);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  box-shadow: 0 0 14px rgba(0, 255, 163, 0.45);
+}
+
+/* 1. Turn-by-Turn GPS Navigation Banner (Estilo Google Maps 3D) */
+.nav-turn-hud {
+  position: absolute;
+  top: 104px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 520;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(8, 14, 28, 0.95);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.85), 0 0 16px rgba(0, 240, 255, 0.2);
+  border-radius: 14px;
+  padding: 8px 16px;
+  max-width: 92%;
+  width: auto;
+  pointer-events: auto;
+  transition: all 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.nav-turn-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-turn-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #00f0ff 0%, #00ffa3 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #030a16;
+  font-size: 1.35rem;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.5);
+  transition: transform 0.2s ease;
+}
+
+.nav-turn-icon-box.pulse {
+  animation: pulseManeuver 1s infinite alternate;
+}
+
+@keyframes pulseManeuver {
+  from { transform: scale(1); box-shadow: 0 0 14px rgba(0, 240, 255, 0.4); }
+  to { transform: scale(1.08); box-shadow: 0 0 24px rgba(0, 255, 163, 0.8); }
+}
+
+.nav-turn-distance-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-turn-dist {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.nav-turn-action {
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.nav-turn-center {
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 170px;
+}
+
+.nav-street-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-street-name {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f8fafc;
+  white-space: nowrap;
+}
+
+.nav-route-badge {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.nav-target-sub {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.nav-turn-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-speed-limit-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3.5px solid #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.nav-speed-limit-badge .limit-val {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-size: 0.78rem;
+  color: #0f172a;
+}
+
+.nav-eta-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.nav-eta-box .eta-time {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #00ffa3;
+  line-height: 1.1;
+}
+
+.nav-eta-box .eta-dist {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.btn-nav-audio {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid var(--border-accent);
+  color: var(--accent-cyan);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-nav-audio:hover {
+  background: var(--accent-cyan);
+  color: #000;
+}
+
+.btn-nav-preview {
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-nav-preview:hover {
+  background: var(--accent-cyan);
+  color: #000;
+  box-shadow: 0 0 14px var(--accent-cyan);
+}
+
+/* 2. Edificios 3D Volumétricos (CSS 3D Prisms en el mapa) */
+.building-3d-prism {
+  position: absolute;
+  transform-style: preserve-3d;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.prism-wall {
+  position: absolute;
+  background: linear-gradient(to top, rgba(6, 12, 24, 0.96) 0%, rgba(14, 28, 54, 0.88) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  background-image: radial-gradient(rgba(0, 240, 255, 0.35) 1.5px, transparent 1.5px);
+  background-size: 8px 12px;
+  box-sizing: border-box;
+}
+
+.prism-roof {
+  position: absolute;
+  background: rgba(18, 38, 70, 0.95);
+  border: 1.5px solid var(--accent-cyan);
+  box-shadow: inset 0 0 12px rgba(0, 240, 255, 0.6), 0 0 8px rgba(0, 240, 255, 0.3);
+}
+
+.building-roof-antenna {
+  position: absolute;
+  width: 2px;
+  height: 20px;
+  background: #ff0055;
+  box-shadow: 0 0 8px #ff0055;
+  top: -20px;
+  left: 50%;
+  animation: antennaPulse 1.2s infinite alternate;
+}
+
+@keyframes antennaPulse {
+  from { opacity: 0.3; }
+  to { opacity: 1; }
+}
+
+/* Edificio Especial de Destino / Hangar */
+.building-landmark-dest {
+  position: absolute;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.landmark-roof-pad {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px dashed #00ffa3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00ffa3;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 0.9rem;
+  background: rgba(0, 255, 163, 0.15);
+  box-shadow: 0 0 20px rgba(0, 255, 163, 0.6);
+  animation: rotateRadarPad 12s linear infinite;
+}
+
+@keyframes rotateRadarPad {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 3. Cono de Faros 3D del Vehículo en Conducción Nocturna */
+.vehicle-headlight-beam {
+  position: absolute;
+  width: 70px;
+  height: 120px;
+  bottom: 50%;
+  left: calc(50% - 35px);
+  background: linear-gradient(to top, rgba(0, 240, 255, 0.42) 0%, rgba(255, 255, 255, 0.18) 25%, transparent 100%);
+  clip-path: polygon(30% 100%, 70% 100%, 100% 0%, 0% 0%);
+  transform-origin: center bottom;
+  pointer-events: none;
+  filter: blur(2px);
+  z-index: -1;
+  display: none;
+}
+
+.mode-inmersive-3d .vehicle-headlight-beam,
+.mode-3d-tilt .vehicle-headlight-beam {
+  display: block;
+}
+
+/* 4. Modal de Previsualización de Destino (Street Preview 3D) */
+.dest-preview-card {
+  max-width: 560px;
+  width: 95%;
+  background: rgba(10, 16, 30, 0.96) !important;
+  border: 1px solid var(--accent-cyan) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 25px rgba(0, 240, 255, 0.3) !important;
+}
+
+.dest-visual-box {
+  height: 180px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #050b18 0%, #0d1e3a 100%);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.dest-hologram-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.dest-building-silhouette {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+}
+
+.dest-building-icon {
+  font-size: 4rem;
+  color: var(--accent-cyan);
+  filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.7));
+}
+
+.dest-scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #00ffa3;
+  box-shadow: 0 0 10px #00ffa3;
+  animation: destScanAnim 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes destScanAnim {
+  from { top: 10%; }
+  to { top: 90%; }
+}
+
+.dest-badge-corner {
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
+  background: rgba(3, 7, 18, 0.85);
+  border: 1px solid var(--accent-green);
+  color: var(--accent-green);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.dest-beacon-pulse {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #00ffa3;
+  box-shadow: 0 0 14px #00ffa3;
+  animation: pulseGreen 1.5s infinite;
+}
+
+.dest-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.dest-info-item {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dest-info-item .d-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.dest-info-item .d-val {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.dest-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.dest-note {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

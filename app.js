@@ -113,6 +113,10 @@ const state = {
   tempDrawnLayers: [],
   customRouteCounter: 1,
   currentViewMode: 'globe-3d', // 'globe-3d' (spherical orbit) | 'surface-2d' (planar street)
+  show3DBuildings: true,
+  inmersiveNav3D: false,
+  navVoiceEnabled: true,
+  lastSpokenManeuver: '',
 
   // ESP32 Cyber IoT Node State
   esp32: {
@@ -1033,6 +1037,7 @@ function initMap() {
   drawActiveRoute();
   renderVehicleMarkers();
   updateGeoOrientationHUD();
+  init3DBuildings();
 }
 
 function updateGeoOrientationHUD(customPlace = null) {
@@ -1276,6 +1281,265 @@ function toggle3DTilt() {
   showNotification(is3D ? '🧊 Perspectiva 3D Táctica Activada' : '📐 Vista Cenital 2D Restaurada', 'info');
 }
 
+// --- 3D Volumetric Buildings & Google Maps Style Inmersive Navigation ---
+let buildings3DLayerGroup = null;
+
+function init3DBuildings() {
+  if (!map) return;
+  if (!buildings3DLayerGroup) {
+    buildings3DLayerGroup = L.layerGroup().addTo(map);
+  } else {
+    buildings3DLayerGroup.clearLayers();
+  }
+
+  if (!state.show3DBuildings) return;
+
+  const c = GLOBAL_COUNTRIES[state.selectedCountryCode] || GLOBAL_COUNTRIES.ARG;
+  const lat = c.lat;
+  const lng = c.lng;
+
+  // Varied urban architectural blocks around city hub
+  const BUILDING_OFFSETS = [
+    { dLat: -0.012, dLng: -0.018, w: 32, d: 28, h: 85, type: 'skysc' },
+    { dLat: -0.014, dLng: -0.011, w: 28, d: 24, h: 65, type: 'skysc' },
+    { dLat: -0.009, dLng: -0.021, w: 36, d: 30, h: 50, type: 'office' },
+    { dLat: -0.008, dLng: -0.008, w: 24, d: 24, h: 42, type: 'office' },
+    { dLat: -0.003, dLng: +0.005, w: 30, d: 28, h: 90, type: 'skysc' },
+    { dLat: -0.006, dLng: +0.012, w: 26, d: 26, h: 55, type: 'office' },
+    { dLat: +0.002, dLng: +0.015, w: 34, d: 32, h: 75, type: 'skysc' },
+    { dLat: +0.008, dLng: +0.022, w: 28, d: 24, h: 48, type: 'office' },
+    { dLat: +0.012, dLng: +0.012, w: 38, d: 35, h: 95, type: 'skysc' },
+    { dLat: +0.015, dLng: +0.004, w: 30, d: 30, h: 60, type: 'office' },
+    { dLat: +0.017, dLng: -0.008, w: 25, d: 25, h: 45, type: 'office' },
+    { dLat: +0.012, dLng: -0.015, w: 32, d: 28, h: 70, type: 'skysc' },
+    { dLat: +0.006, dLng: -0.024, w: 28, d: 26, h: 52, type: 'office' },
+    { dLat: +0.001, dLng: -0.012, w: 26, d: 24, h: 38, type: 'office' },
+    { dLat: -0.018, dLng: -0.005, w: 35, d: 30, h: 72, type: 'skysc' },
+    { dLat: -0.016, dLng: +0.016, w: 30, d: 28, h: 58, type: 'office' },
+    { dLat: +0.005, dLng: +0.026, w: 26, d: 26, h: 40, type: 'office' },
+    { dLat: +0.021, dLng: +0.018, w: 40, d: 32, h: 105, type: 'skysc' },
+    { dLat: +0.022, dLng: -0.012, w: 32, d: 30, h: 68, type: 'office' },
+    { dLat: -0.002, dLng: -0.028, w: 34, d: 28, h: 62, type: 'skysc' }
+  ];
+
+  BUILDING_OFFSETS.forEach(b => {
+    const bLat = lat + b.dLat;
+    const bLng = lng + b.dLng;
+
+    const bIcon = L.divIcon({
+      className: 'building-3d-prism-wrap',
+      html: `
+        <div class="building-3d-prism" style="width:${b.w}px; height:${b.d}px;">
+          <div class="prism-wall" style="width:${b.w}px; height:${b.h}px; bottom:0; left:0; transform: translateZ(${b.d/2}px);"></div>
+          <div class="prism-wall" style="width:${b.w}px; height:${b.h}px; bottom:0; left:0; transform: rotateY(180deg) translateZ(${b.d/2}px);"></div>
+          <div class="prism-wall" style="width:${b.d}px; height:${b.h}px; bottom:0; left:${(b.w-b.d)/2}px; transform: rotateY(-90deg) translateZ(${b.w/2}px);"></div>
+          <div class="prism-wall" style="width:${b.d}px; height:${b.h}px; bottom:0; left:${(b.w-b.d)/2}px; transform: rotateY(90deg) translateZ(${b.w/2}px);"></div>
+          <div class="prism-roof" style="width:${b.w}px; height:${b.d}px; top:0; left:0; transform: translateZ(${b.h}px);">
+            ${b.type === 'skysc' ? '<div class="building-roof-antenna"></div>' : ''}
+          </div>
+        </div>
+      `,
+      iconSize: [b.w, b.d],
+      iconAnchor: [b.w / 2, b.d / 2]
+    });
+
+    L.marker([bLat, bLng], { icon: bIcon, interactive: false }).addTo(buildings3DLayerGroup);
+  });
+
+  // Landmark: Destino / Hangar Seguro 3D con helipuerto
+  const destLat = lat + 0.010;
+  const destLng = lng + 0.018;
+  const destIcon = L.divIcon({
+    className: 'building-landmark-dest-wrap',
+    html: `
+      <div class="building-landmark-dest" style="width:52px; height:46px;">
+        <div class="prism-wall" style="width:52px; height:35px; bottom:0; left:0; border-color:#00ffa3; transform: translateZ(23px);"></div>
+        <div class="prism-wall" style="width:52px; height:35px; bottom:0; left:0; border-color:#00ffa3; transform: rotateY(180deg) translateZ(23px);"></div>
+        <div class="prism-wall" style="width:46px; height:35px; bottom:0; left:3px; border-color:#00ffa3; transform: rotateY(-90deg) translateZ(26px);"></div>
+        <div class="prism-wall" style="width:46px; height:35px; bottom:0; left:3px; border-color:#00ffa3; transform: rotateY(90deg) translateZ(26px);"></div>
+        <div class="prism-roof" style="width:52px; height:46px; top:0; left:0; border-color:#00ffa3; transform: translateZ(35px);">
+          <div class="landmark-roof-pad">H</div>
+        </div>
+      </div>
+    `,
+    iconSize: [52, 46],
+    iconAnchor: [26, 23]
+  });
+
+  L.marker([destLat, destLng], { icon: destIcon })
+    .bindPopup(`<b>🎯 DESTINO PRINCIPAL: HANGAR CENTRAL</b><br>Acceso Seguro &bull; Puesto de Guardia 01<br><small style="color:#00ffa3">Edificio de Llegada 3D</small>`)
+    .addTo(buildings3DLayerGroup);
+}
+
+function toggle3DBuildings() {
+  state.show3DBuildings = !state.show3DBuildings;
+  const btn = document.getElementById('btn-toggle-3d-buildings');
+  if (btn) {
+    btn.classList.toggle('active', state.show3DBuildings);
+  }
+  init3DBuildings();
+  showNotification(state.show3DBuildings ? '🏢 Edificios 3D Volumétricos Activados' : 'Edificios 3D Ocultos', 'info');
+}
+
+function toggleInmersiveNav() {
+  state.inmersiveNav3D = !state.inmersiveNav3D;
+  const mapWrapper = document.querySelector('.map-wrapper');
+  const scopeBtn = document.getElementById('scope-btn-nav3d');
+
+  if (scopeBtn) {
+    document.querySelectorAll('.scope-btn').forEach(b => b.classList.remove('active'));
+    if (state.inmersiveNav3D) scopeBtn.classList.add('active');
+  }
+
+  if (mapWrapper) {
+    mapWrapper.classList.toggle('mode-inmersive-3d', state.inmersiveNav3D);
+  }
+
+  const curVeh = getSelectedVehicle();
+  if (curVeh && map) {
+    map.flyTo([curVeh.lat, curVeh.lng], 16, { duration: 1.2 });
+  }
+
+  showNotification(
+    state.inmersiveNav3D
+      ? '🚀 Modo Navegación 3D Inmersiva Activado (Estilo Google Maps 3D)'
+      : 'Vista Cenital Restaurada',
+    'success'
+  );
+}
+
+function updateNavigationHUD(veh) {
+  if (!veh) return;
+  const route = state.routes[veh.routeId];
+  if (!route || route.path.length < 2) return;
+
+  const segIdx = Math.floor(veh.simIndex || 0);
+  const nextIdx = Math.min(segIdx + 1, route.path.length - 1);
+  const nextPoint = route.path[nextIdx];
+
+  const distMeters = Math.max(15, Math.round(getDistanceMeters(veh.lat, veh.lng, nextPoint[0], nextPoint[1])));
+  let maneuverIcon = 'fa-arrow-up';
+  let maneuverText = 'Continúe recto';
+  let isNearTurn = distMeters < 90;
+
+  if (nextIdx < route.path.length - 1) {
+    const afterNext = route.path[nextIdx + 1];
+    const curDy = nextPoint[0] - veh.lat;
+    const curDx = nextPoint[1] - veh.lng;
+    const nextDy = afterNext[0] - nextPoint[0];
+    const nextDx = afterNext[1] - nextPoint[1];
+
+    let heading1 = Math.atan2(curDx, curDy) * (180 / Math.PI);
+    let heading2 = Math.atan2(nextDx, nextDy) * (180 / Math.PI);
+    let delta = heading2 - heading1;
+    while (delta > 180) delta -= 360;
+    while (delta < -180) delta += 360;
+
+    if (delta > 25) {
+      maneuverIcon = 'fa-arrow-turn-right';
+      maneuverText = 'Girar a la derecha';
+    } else if (delta < -25) {
+      maneuverIcon = 'fa-arrow-turn-left';
+      maneuverText = 'Girar a la izquierda';
+    } else {
+      maneuverIcon = 'fa-arrow-up';
+      maneuverText = 'Continuar por carril central';
+    }
+  } else {
+    maneuverIcon = 'fa-flag-checkered';
+    maneuverText = 'Aproximándose al Destino';
+  }
+
+  const c = GLOBAL_COUNTRIES[state.selectedCountryCode] || GLOBAL_COUNTRIES.ARG;
+  const STREET_NAMES = {
+    ARG: ['Av. del Libertador', 'Av. Figueroa Alcorta', 'Av. 9 de Julio', 'Autopista Illia', 'Av. Costanera'],
+    ESP: ['Paseo de la Castellana', 'Calle de Alcalá', 'Gran Vía', 'Paseo del Prado', 'M-30 Lateral'],
+    MEX: ['Paseo de la Reforma', 'Av. Insurgentes Sur', 'Periférico Norte', 'Av. Chapultepec', 'Circuito Interior'],
+    USA: ['Biscayne Boulevard', 'Brickell Avenue', 'Ocean Drive', 'Collins Avenue', 'I-95 Expressway'],
+    COL: ['Carrera 7ma', 'Av. El Dorado (Calle 26)', 'Av. Boyacá', 'Autopista Norte', 'Carrera 30 (NQS)'],
+    CHL: ['Av. Providencia', 'Av. Libertador O\'Higgins', 'Av. Las Condes', 'Costanera Norte', 'Av. Vitacura'],
+    BRA: ['Avenida Paulista', 'Av. Faria Lima', 'Marginal Pinheiros', 'Av. 23 de Maio', 'Rua da Consolação'],
+    PER: ['Av. Javier Prado', 'Av. Arequipa', 'Vía Expresa Paseo de la República', 'Av. Salaverry', 'Av. Brasil']
+  };
+
+  const streetList = STREET_NAMES[c.code] || ['Avenida Principal', 'Vía Rápida Conectora', 'Corredor Seguro', 'Bulevar Central'];
+  const currentStreet = streetList[segIdx % streetList.length];
+
+  const nextCp = (route.checkpoints && route.checkpoints[Math.min(segIdx, (route.checkpoints.length - 1))])
+    ? route.checkpoints[Math.min(segIdx, (route.checkpoints.length - 1))].name
+    : `Destino Base ${c.capital}`;
+
+  const distEl = document.getElementById('nav-maneuver-dist');
+  const actionEl = document.getElementById('nav-maneuver-text');
+  const iconEl = document.getElementById('nav-maneuver-icon');
+  const iconBox = document.getElementById('nav-maneuver-icon-box');
+  const streetEl = document.getElementById('nav-current-street');
+  const targetEl = document.getElementById('nav-next-target');
+  const etaTimeEl = document.getElementById('nav-eta-time');
+  const etaDistEl = document.getElementById('nav-eta-dist');
+
+  if (distEl) distEl.innerText = `${distMeters} m`;
+  if (actionEl) actionEl.innerText = maneuverText;
+  if (iconEl) iconEl.className = `fa-solid ${maneuverIcon}`;
+  if (iconBox) iconBox.classList.toggle('pulse', isNearTurn);
+  if (streetEl) streetEl.innerText = currentStreet;
+  if (targetEl) targetEl.innerText = `Hacia: ${nextCp}`;
+
+  const speedKmh = Math.max(20, veh.speed);
+  const remainingDistKm = (distMeters * 3.5 / 1000).toFixed(1);
+  const etaMinutes = Math.max(1, Math.round((remainingDistKm / speedKmh) * 60));
+
+  if (etaTimeEl) etaTimeEl.innerText = `${etaMinutes} min`;
+  if (etaDistEl) etaDistEl.innerText = `${remainingDistKm} km`;
+
+  if (state.navVoiceEnabled && isNearTurn && state.lastSpokenManeuver !== `${segIdx}-${maneuverText}`) {
+    state.lastSpokenManeuver = `${segIdx}-${maneuverText}`;
+    speakNavInstruction(`En ${distMeters} metros, ${maneuverText.toLowerCase()} hacia ${currentStreet}`);
+  }
+}
+
+function speakNavInstruction(text) {
+  if (!state.navVoiceEnabled) return;
+  try {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'es-ES';
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+      utterance.volume = 0.85;
+      window.speechSynthesis.speak(utterance);
+    } else {
+      playTacticalClick();
+    }
+  } catch (err) {}
+}
+
+function openDestinationPreview() {
+  const modal = document.getElementById('dest-preview-modal');
+  const c = GLOBAL_COUNTRIES[state.selectedCountryCode] || GLOBAL_COUNTRIES.ARG;
+
+  const destNameEl = document.getElementById('dest-place-name');
+  const destCoordsEl = document.getElementById('dest-coords');
+  const destGateEl = document.getElementById('dest-access-gate');
+
+  if (destNameEl) destNameEl.innerText = `Base Hangar Logístico // ${c.capital} (${c.name})`;
+  if (destCoordsEl) {
+    const lat = (c.lat + 0.010).toFixed(4);
+    const lng = (c.lng + 0.018).toFixed(4);
+    destCoordsEl.innerText = `${lat}° ${lat >= 0 ? 'N' : 'S'}, ${lng}° ${lng >= 0 ? 'E' : 'O'}`;
+  }
+  if (destGateEl) destGateEl.innerText = `Portón Principal ${c.capital} #02 (Acceso Autorizado)`;
+
+  if (modal) modal.classList.add('active');
+  playLockTargetSound();
+}
+
+function closeDestinationPreview() {
+  const modal = document.getElementById('dest-preview-modal');
+  if (modal) modal.classList.remove('active');
+}
+
 function deployFleetToCountry(countryCode) {
   const c = GLOBAL_COUNTRIES[countryCode];
   if (!c) return;
@@ -1353,6 +1617,7 @@ function deployFleetToCountry(countryCode) {
   renderVehicleMarkers();
   updateGeoOrientationHUD(`${c.name} • ${c.capital}`);
   updateTelemetryDisplay(getSelectedVehicle());
+  init3DBuildings();
 
   addAlertItem({
     title: `FLOTA TRASLADADA A ${c.name.toUpperCase()}`,
@@ -1533,6 +1798,7 @@ function renderVehicleMarkers() {
     const customIcon = L.divIcon({
       className: 'tactical-marker-container',
       html: `
+        <div class="vehicle-headlight-beam" style="transform: rotate(${veh.heading}deg);"></div>
         <div class="tactical-vehicle-icon ${isDeviated ? 'deviated' : ''}" style="border-color:${isSelected ? '#22d3ee' : '#38bdf8'}; transform: rotate(${veh.heading}deg);">
           <i class="fa-solid fa-location-arrow"></i>
         </div>
@@ -1737,6 +2003,11 @@ function updateSimulationStep() {
   // Update UI components
   renderVehicleMarkers();
   updateTelemetryDisplay(currentVeh);
+  updateNavigationHUD(currentVeh);
+
+  if (state.inmersiveNav3D && map) {
+    map.panTo([currentVeh.lat, currentVeh.lng], { animate: false });
+  }
 }
 
 // --- Telemetry Display Updates ---
@@ -2856,6 +3127,13 @@ function setupEventListeners() {
     tilt3DBtn.addEventListener('click', toggle3DTilt);
   }
 
+  // 3D Volumetric Buildings Toggle Button (Estilo Google Maps 3D)
+  const buildings3DBtn = document.getElementById('btn-toggle-3d-buildings');
+  if (buildings3DBtn) {
+    buildings3DBtn.classList.toggle('active', state.show3DBuildings);
+    buildings3DBtn.addEventListener('click', toggle3DBuildings);
+  }
+
   // Dedicated Map Dark / Light Mode Toggle Button
   const mapDarkToggleBtn = document.getElementById('btn-toggle-map-dark');
   if (mapDarkToggleBtn) {
@@ -2878,8 +3156,37 @@ function setupEventListeners() {
   const scopeVeh = document.getElementById('scope-btn-veh');
   if (scopeVeh) scopeVeh.addEventListener('click', () => setGeoScope('veh'));
 
+  // Google Maps 3D Inmersive Navigation Scope Button
+  const nav3DBtn = document.getElementById('scope-btn-nav3d');
+  if (nav3DBtn) {
+    nav3DBtn.addEventListener('click', toggleInmersiveNav);
+  }
+
   const scopeMyGps = document.getElementById('scope-btn-my-gps');
   if (scopeMyGps) scopeMyGps.addEventListener('click', () => setGeoScope('my-gps'));
+
+  // Turn-by-Turn GPS Navigation Voice Toggle Button
+  const navVoiceBtn = document.getElementById('btn-toggle-nav-voice');
+  if (navVoiceBtn) {
+    navVoiceBtn.addEventListener('click', () => {
+      state.navVoiceEnabled = !state.navVoiceEnabled;
+      const icon = document.getElementById('nav-voice-icon');
+      if (icon) {
+        icon.className = state.navVoiceEnabled ? 'fa-solid fa-volume-high text-cyan' : 'fa-solid fa-volume-xmark text-muted';
+      }
+      showNotification(state.navVoiceEnabled ? '🔊 Guía por voz activada' : '🔇 Guía por voz silenciada', 'info');
+    });
+  }
+
+  // Destination 3D Street Preview Modal Controls
+  const openDestBtn = document.getElementById('btn-open-dest-preview');
+  if (openDestBtn) openDestBtn.addEventListener('click', openDestinationPreview);
+
+  const closeDestBtn = document.getElementById('btn-close-dest-preview');
+  if (closeDestBtn) closeDestBtn.addEventListener('click', closeDestinationPreview);
+
+  const ackDestBtn = document.getElementById('btn-dest-ack');
+  if (ackDestBtn) ackDestBtn.addEventListener('click', closeDestinationPreview);
 
   // Close Dispatch Modal
   const closeDispatchBtn = document.getElementById('dispatch-close-btn');
