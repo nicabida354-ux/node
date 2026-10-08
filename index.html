@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RHINO SENTINEL // Sistema Táctico de Telemetría GPS y Vigilancia</title>
+  <meta name="description"
+    content="Centro de monitoreo táctico de flota: GPS Rhino, cámaras espía sincronizadas, geocercas y alertas automáticas de desvío de ruta.">
+
+  <!-- Google Fonts: Inter, JetBrains Mono & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Three.js & OrbitControls for 3D Earth Globe -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+
+<body class="dark-tactical-theme" id="app-body">
+  <!-- Holographic CRT Scanline & Phosphor Overlay -->
+  <div class="crt-overlay" id="crt-overlay"></div>
+
+  <!-- Top Aerospace/Satellite Telemetry Strip (Estilo Aitue / Starlink) -->
+  <div class="top-announcement-strip">
+    <div class="strip-left">
+      <span class="pulsing-orbit-dot"></span>
+      <span class="strip-badge">SISTEMA ULTRA+</span>
+      <span class="strip-text">ENLACE SATELITAL TELEMÉTRICO &bull; COMPATIBLE CON STARLINK MINI &bull; LTE
+        PRIVADO</span>
+    </div>
+    <div class="strip-right">
+      <span><i class="fa-solid fa-satellite text-cyan"></i> TELEMETRÍA 360°</span>
+      <span class="divider">|</span>
+      <span><i class="fa-solid fa-shield-halved text-green"></i> CUSTODIA ACTIVA</span>
+      <span class="divider">|</span>
+      <span><i class="fa-solid fa-headset"></i> CENTRAL: 0800-345-RHINO</span>
+    </div>
+  </div>
+
+  <!-- Top Tactical Header -->
+  <header class="top-nav" id="top-nav">
+    <div class="brand-section">
+      <div class="brand-logo">
+        <i class="fa-solid fa-satellite-dish pulse-icon"></i>
+      </div>
+      <div class="brand-info">
+        <h1>RHINO <span class="brand-cyan">SENTINEL</span> <span class="badge-v1">ULTRA+</span></h1>
+        <p class="subtitle">SOLUCIONES GLOBALES EN TELEMETRÍA &bull; CÁMARA ESPÍA &bull; STARLINK COMPATIBLE</p>
+      </div>
+    </div>
+
+    <!-- Live Telemetry Stats Bar -->
+    <div class="header-metrics">
+      <div class="metric-pill">
+        <span class="metric-dot online"></span>
+        <span class="metric-label">GPS ACTIVOS:</span>
+        <span class="metric-val" id="stat-active-gps">3/3</span>
+      </div>
+      <div class="metric-pill">
+        <span class="metric-dot camera-dot"></span>
+        <span class="metric-label">CÁMARAS ESPÍA:</span>
+        <span class="metric-val" id="stat-active-cams">2/2</span>
+      </div>
+      <div class="metric-pill alert-pill" id="header-alert-indicator">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span class="metric-label">ALERTAS HOY:</span>
+        <span class="metric-val text-red" id="stat-alert-count">0</span>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="header-actions">
+      <!-- CRT Holographic Scanlines Toggle -->
+      <button class="btn-tactical btn-crt-toggle" id="btn-toggle-crt" title="Alternar Scanlines CRT Holográficas Cyber">
+        <i class="fa-solid fa-tv"></i> <span id="crt-label">CRT SCAN</span>
+      </button>
+      <!-- Theme Toggle Button (Light / Dark) -->
+      <button class="btn-tactical btn-theme-toggle" id="btn-toggle-theme" title="Alternar entre Modo Claro y Oscuro">
+        <i class="fa-solid fa-sun" id="theme-icon"></i> <span id="theme-label">TEMA CLARO</span>
+      </button>
+      <button class="btn-tactical btn-sos" id="btn-panic-sos" title="Activar Alerta Inmediata de Pánico SOS">
+        <i class="fa-solid fa-triangle-exclamation"></i> <span>PÁNICO SOS</span>
+      </button>
+      <button class="btn-tactical btn-mute" id="btn-toggle-sound" title="Activar/Silenciar alarma acústica">
+        <i class="fa-solid fa-volume-high" id="sound-icon"></i> <span>SONIDO</span>
+      </button>
+      <button class="btn-tactical btn-primary" id="btn-open-pairing-modal">
+        <i class="fa-solid fa-link"></i> <span>VINCULAR</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Command Center Grid -->
+  <main class="dashboard-grid">
+
+    <!-- LEFT SIDEBAR: Vehicles, Devices & Pairing Tree -->
+    <aside class="sidebar-left" id="sidebar-left">
+      <!-- Tabs to switch views -->
+      <div class="sidebar-tabs">
+        <button class="tab-btn active" id="tab-vehicles-btn" onclick="switchSidebarTab('vehicles')">
+          <i class="fa-solid fa-truck-shield"></i> Flota
+        </button>
+        <button class="tab-btn" id="tab-devices-btn" onclick="switchSidebarTab('devices')">
+          <i class="fa-solid fa-satellite"></i> GPS/Cam
+        </button>
+        <button class="tab-btn" id="tab-routes-btn" onclick="switchSidebarTab('routes')">
+          <i class="fa-solid fa-route"></i> Rutas
+        </button>
+        <button class="tab-btn" id="tab-esp32-btn" onclick="switchSidebarTab('esp32')">
+          <i class="fa-solid fa-microchip text-cyan"></i> ESP32 IoT
+        </button>
+      </div>
+
+      <!-- Tab 1: Vehicles & Active Pairing -->
+      <div class="tab-content active" id="tab-vehicles-view">
+        <div class="panel-header">
+          <h3><i class="fa-solid fa-shield-halved"></i> UNIDADES EN RASTREO</h3>
+          <span class="count-badge" id="vehicle-count-badge">2 Unidades</span>
+        </div>
+        <p class="panel-hint">Gestiona el vehículo vinculando un GPS Rhino con o sin Cámara Espía.</p>
+
+        <div class="vehicle-list" id="vehicle-list-container">
+          <!-- Dynamically populated via JS -->
+        </div>
+
+        <button class="btn-action-full" id="btn-create-vehicle">
+          <i class="fa-solid fa-plus-circle"></i> Nuevo Vehículo / Escolta
+        </button>
+      </div>
+
+      <!-- Tab 2: Devices (Standalone or Linked) -->
+      <div class="tab-content" id="tab-devices-view">
+        <div class="panel-header">
+          <h3><i class="fa-solid fa-satellite"></i> HARDWARE REGISTRADO</h3>
+        </div>
+        <div class="sub-section">
+          <h4><i class="fa-solid fa-location-crosshairs text-cyan"></i> GPS RHINO FLOTA</h4>
+          <div class="device-chips" id="gps-device-chips">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <div class="sub-section mt-3">
+          <h4><i class="fa-solid fa-video text-amber"></i> CÁMARAS ESPÍA / DASHCAMS</h4>
+          <div class="device-chips" id="cam-device-chips">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <div class="pairing-callout">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Puedes mantener un GPS o una Cámara funcionando <b>por separado</b>, o <b>vincularlos en conjunto</b> a
+            un vehículo para un registro unificado.</span>
+        </div>
+      </div>
+
+      <!-- Tab 3: Route Settings & Geofences -->
+      <div class="tab-content" id="tab-routes-view">
+        <div class="panel-header">
+          <h3><i class="fa-solid fa-diamond-turn-right"></i> CORREDORES & CHECKPOINTS</h3>
+        </div>
+
+        <div class="route-selector-box">
+          <label for="active-route-select">Ruta Autorizada Activa:</label>
+          <select id="active-route-select" class="tactical-select">
+            <option value="corredor-norte">Corredor Norte (Base Logística -> Aeropuerto)</option>
+            <option value="ruta-custodia">Ruta Custodia Centro (Banco Central -> Bóveda 2)</option>
+          </select>
+        </div>
+
+        <!-- Button to enter live drawing mode -->
+        <button class="btn-action-full btn-highlight-cyan" id="btn-start-draw-route">
+          <i class="fa-solid fa-pen-ruler"></i> + Trazar Nueva Ruta en Mapa
+        </button>
+
+        <div class="route-specs-card">
+          <div class="spec-row">
+            <span>Tolerancia de desvío:</span>
+            <span class="spec-val text-cyan" id="tolerance-val">60 metros</span>
+          </div>
+
+          <!-- Live tolerance range slider -->
+          <div class="tolerance-slider-box">
+            <div class="slider-header">
+              <span>Ajustar Ancho del Corredor:</span>
+              <span class="text-cyan font-mono" id="slider-tol-display">60m</span>
+            </div>
+            <input type="range" id="tolerance-slider" min="20" max="180" step="5" value="60" class="tactical-slider">
+            <div class="slider-labels">
+              <span>20m (Estricto)</span>
+              <span>180m (Amplio)</span>
+            </div>
+          </div>
+
+          <div class="spec-row">
+            <span>Checkpoints Obligatorios:</span>
+            <span class="spec-val" id="checkpoint-count">3 Puntos</span>
+          </div>
+          <div class="spec-row">
+            <span>Protocolo de infracción:</span>
+            <span class="spec-val text-red">Alerta Inmediata + Snap Cam + WhatsApp</span>
+          </div>
+        </div>
+
+        <div class="route-actions-group">
+          <button class="btn-secondary-full" id="btn-test-normal-route">
+            <i class="fa-solid fa-play"></i> Simular Recorrido Normal
+          </button>
+          <button class="btn-danger-full" id="btn-test-deviate-route">
+            <i class="fa-solid fa-triangle-exclamation"></i> Forzar Desvío de Ruta (Prueba Alerta)
+          </button>
+          <button class="btn-action-full mt-2 btn-whatsapp-sim" id="btn-sim-dispatch">
+            <i class="fa-brands fa-whatsapp"></i> Simular Despacho WhatsApp Central
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 4: ESP32 IoT Nodes & Motion / Human Detection System -->
+      <div class="tab-content" id="tab-esp32-view">
+        <div class="panel-header">
+          <h3><i class="fa-solid fa-microchip text-cyan"></i> RED DE SENSORES ESP32</h3>
+          <span class="count-badge count-esp32" id="esp32-node-count-badge">3 Nodos Online</span>
+        </div>
+        <p class="panel-hint">Monitoreo de movimiento, calor corporal y presencia humana mediante microcontroladores ESP32 en cabina y carga.</p>
+
+        <!-- ESP32 Node Cards -->
+        <div class="esp32-nodes-list" id="esp32-nodes-container">
+          <!-- Node 1: ESP32-CAM + PIR Sensor -->
+          <div class="esp32-card" id="card-esp32-cam">
+            <div class="esp32-card-header">
+              <div class="esp32-title">
+                <i class="fa-solid fa-video text-amber"></i>
+                <div>
+                  <div class="esp32-name">ESP32-CAM-01 (Óptico + PIR HC-SR501)</div>
+                  <div class="esp32-loc">Ubicación: Parabrisas / Cabina Principal</div>
+                </div>
+              </div>
+              <span class="badge-node-online"><span class="node-live-dot"></span> EN LÍNEA</span>
+            </div>
+            <div class="esp32-metrics-row">
+              <div class="esp32-metric">
+                <span class="em-label">DETECCIÓN PIR</span>
+                <span class="em-val text-green" id="esp32-pir-status">DESPEJADO</span>
+              </div>
+              <div class="esp32-metric">
+                <span class="em-label">PERSONAS</span>
+                <span class="em-val" id="esp32-persons-count">0 en foco</span>
+              </div>
+              <div class="esp32-metric">
+                <span class="em-label">WIFI RSSI</span>
+                <span class="em-val text-cyan">-54 dBm</span>
+              </div>
+              <div class="esp32-metric">
+                <span class="em-label">BATERÍA LIPO</span>
+                <span class="em-val text-green">4.18V (98%)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Node 2: ESP32 mmWave Radar 24GHz (LD2410) -->
+          <div class="esp32-card" id="card-esp32-radar">
+            <div class="esp32-card-header">
+              <div class="esp32-title">
+                <i class="fa-solid fa-satellite-dish text-cyan"></i>
+                <div>
+                  <div class="esp32-name">ESP32-RADAR-02 (Radar mmWave 24GHz)</div>
+                  <div class="esp32-loc">Ubicación: Asiento Trasero / Zona Carga</div>
+                </div>
+              </div>
+              <span class="badge-node-online"><span class="node-live-dot"></span> EN LÍNEA</span>
+            </div>
+            <div class="esp32-metrics-row">
+              <div class="esp32-metric">
+                <span class="em-label">PRESENCIA HUMANA</span>
+                <span class="em-val text-cyan" id="esp32-radar-status">SIN MOVIMIENTO</span>
+              </div>
+              <div class="esp32-metric">
+                <span class="em-label">DISTANCIA RADAR</span>
+                <span class="em-val" id="esp32-radar-dist">0.0 m</span>
+              </div>
+              <div class="esp32-metric">
+                <span class="em-label">MICROMOVIMIENTO</span>
+                <span class="em-val text-green" id="esp32-radar-micro">0% Reposo</span>
+              </div>
+              <div class="esp32-metric">
+                <span class="em-label">ENLACE BLE</span>
+                <span class="em-val text-green">Activo</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Node 3: ESP32 Thermal Infrared Matrix AMG8833 -->
+          <div class="esp32-card" id="card-esp32-thermal">
+            <div class="esp32-card-header">
+              <div class="esp32-title">
+                <i class="fa-solid fa-temperature-half text-pink"></i>
+                <div>
+                  <div class="esp32-name">ESP32-THERM-03 (Matriz Térmica AMG8833)</div>
+                  <div class="esp32-loc">Ubicación: Techo Interior / Detector Calor</div>
+                </div>
+              </div>
+              <span class="badge-node-online"><span class="node-live-dot"></span> EN LÍNEA</span>
+            </div>
+            <div class="esp32-metrics-row">
+              <div class="esp32-metric">
+                <span class="em-label">FIRMA TÉRMICA</span>
+                <span class="em-val" id="esp32-thermal-temp">22.4°C (Ambiente)</span>
+              </div>
+              <div class="esp32-metric">
+                <span class="em-label">CALOR HUMANO</span>
+                <span class="em-val text-green" id="esp32-thermal-human">No detectado</span>
+              </div>
+              <div class="esp32-metric">
+                <span class="em-label">MATRIZ I2C</span>
+                <span class="em-val text-cyan">8x8 Píxeles</span>
+              </div>
+              <div class="esp32-metric">
+                <span class="em-label">ESTADO BUS</span>
+                <span class="em-val text-green">0x69 OK</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ESP32 Actions & Simulation Trigger Bar -->
+        <div class="esp32-actions-group">
+          <button class="btn-action-full btn-highlight-amber" id="btn-sim-esp32-motion">
+            <i class="fa-solid fa-person-walking"></i> Simular Persona / Movimiento PIR
+          </button>
+          <button class="btn-action-full btn-highlight-red mt-2" id="btn-sim-esp32-intrusion">
+            <i class="fa-solid fa-triangle-exclamation"></i> Alerta Intrusión (Vehículo Detenido)
+          </button>
+          <button class="btn-action-full btn-highlight-cyan mt-2" id="btn-open-esp32-code">
+            <i class="fa-solid fa-code"></i> Ver Firmware Arduino ESP32 (.ino)
+          </button>
+        </div>
+
+        <!-- Live ESP32 Telemetry Terminal Log -->
+        <div class="esp32-terminal-box">
+          <div class="terminal-header">
+            <span><i class="fa-solid fa-terminal text-cyan"></i> CONSOLA TELEMETRÍA ESP32 (JSON STREAM)</span>
+            <button class="terminal-clear" id="btn-clear-esp32-log">LIMPIAR</button>
+          </div>
+          <div class="terminal-body font-mono" id="esp32-log-terminal">
+            <div class="term-line text-cyan">[INIT] Gateway ESP32 inicializado en ws://rhino-sentinel.local:8080/esp32</div>
+            <div class="term-line text-green">[ESP32-CAM-01] Handshake OK (IP: 192.168.1.145, PIR: STANDBY)</div>
+            <div class="term-line text-green">[ESP32-RADAR-02] mmWave LD2410 calibrado a 6m (Presencia Humana: LISTA)</div>
+            <div class="term-line text-green">[ESP32-THERM-03] Matriz AMG8833 en bus I2C 0x69 (22.4°C)</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER: Main Live Map & Simulator Control -->
+    <section class="center-stage">
+      <!-- Live Map Container -->
+      <div class="map-wrapper">
+        <!-- Floating Interactive Route Drawing HUD Bar -->
+        <div class="drawing-hud-bar" id="drawing-hud-bar" style="display: none;">
+          <div class="drawing-hud-info">
+            <i class="fa-solid fa-pen-nib text-cyan pulse-icon"></i>
+            <span><b>MODO TRAZADO ACTIVO:</b> Haz clic en el mapa para marcar puntos de la nueva ruta.</span>
+          </div>
+          <div class="drawing-hud-controls">
+            <span class="drawing-point-count" id="drawing-point-count">0 puntos fijados</span>
+            <button class="btn-tactical btn-primary btn-sm" id="btn-save-drawn-route">
+              <i class="fa-solid fa-check"></i> Finalizar y Guardar
+            </button>
+            <button class="btn-tactical btn-secondary btn-sm" id="btn-cancel-drawing">
+              <i class="fa-solid fa-xmark"></i> Cancelar
+            </button>
+          </div>
+        </div>
+
+        <!-- 3D Planet Earth WebGL Container (Global View) -->
+        <div id="globe-3d-container"></div>
+
+        <!-- 3D Globe Mode Interactive Floating Overlay -->
+        <div class="globe-hud-overlay" id="globe-hud-overlay">
+          <div class="globe-hud-badge">
+            <span class="pulsing-orbit-dot"></span>
+            <span><b>ÓRBITA SATELITAL 3D:</b> Planeta Tierra &bull; Haz clic en CUALQUIER país para entrar</span>
+          </div>
+
+          <!-- Quick Country Selector & Descend Button -->
+          <div class="globe-country-dock">
+            <div class="globe-country-label">
+              <i class="fa-solid fa-earth-americas text-cyan"></i> <span>IR A PAÍS:</span>
+            </div>
+            <select id="globe-country-select" class="tactical-country-select">
+              <option value="ARG">🇦🇷 Argentina (Buenos Aires)</option>
+              <option value="ESP">🇪🇸 España (Madrid / Barcelona)</option>
+              <option value="MEX">🇲🇽 México (CDMX / Guadalajara)</option>
+              <option value="USA">🇺🇸 Estados Unidos (Miami / NY)</option>
+              <option value="COL">🇨🇴 Colombia (Bogotá / Medellín)</option>
+              <option value="CHL">🇨🇱 Chile (Santiago)</option>
+              <option value="BRA">🇧🇷 Brasil (São Paulo / Río)</option>
+              <option value="PER">🇵🇪 Perú (Lima)</option>
+              <option value="URY">🇺🇾 Uruguay (Montevideo)</option>
+              <option value="FRA">🇫🇷 Francia (París)</option>
+              <option value="DEU">🇩🇪 Alemania (Berlín)</option>
+              <option value="ITA">🇮🇹 Italia (Roma / Milán)</option>
+              <option value="GBR">🇬🇧 Reino Unido (Londres)</option>
+              <option value="JPN">🇯🇵 Japón (Tokio)</option>
+              <option value="CAN">🇨🇦 Canadá (Toronto / Montreal)</option>
+              <option value="AUS">🇦🇺 Australia (Sídney)</option>
+            </select>
+            <button class="btn-enter-surface" id="btn-descend-to-surface">
+              <i class="fa-solid fa-plane-arrival"></i> <span>ENTRAR AL PAÍS (MODO PLANO 2D)</span>
+            </button>
+          </div>
+
+          <div class="globe-click-hint">
+            <i class="fa-solid fa-arrow-pointer text-cyan"></i>
+            <span>O <b>haz clic directamente en cualquier parte del planeta</b> para descender allí</span>
+          </div>
+        </div>
+
+        <!-- 2D Tactical Planar Surface Map (Flat Non-Rotational Movement) -->
+        <div id="tactical-map"></div>
+
+        <!-- Floating Map Overlay Controls -->
+        <div class="map-overlay-bar">
+          <div class="map-status-chip">
+            <span class="pulse-indicator"></span>
+            <span id="map-tracking-status">SEGUIMIENTO EN VIVO</span>
+            <span class="map-location-breadcrumb" id="map-location-breadcrumb">📍 Buenos Aires, Argentina &bull; Sudamérica</span>
+          </div>
+
+          <!-- Country Quick Jumper in 2D Surface Mode -->
+          <div class="surface-country-bar">
+            <i class="fa-solid fa-globe text-cyan"></i>
+            <select id="surface-country-select" class="tactical-country-select-sm" title="Cambiar a otro país">
+              <option value="ARG">🇦🇷 Argentina</option>
+              <option value="ESP">🇪🇸 España</option>
+              <option value="MEX">🇲🇽 México</option>
+              <option value="USA">🇺🇸 EE.UU.</option>
+              <option value="COL">🇨🇴 Colombia</option>
+              <option value="CHL">🇨🇱 Chile</option>
+              <option value="BRA">🇧🇷 Brasil</option>
+              <option value="PER">🇵🇪 Perú</option>
+              <option value="URY">🇺🇾 Uruguay</option>
+              <option value="FRA">🇫🇷 Francia</option>
+              <option value="DEU">🇩🇪 Alemania</option>
+              <option value="ITA">🇮🇹 Italia</option>
+              <option value="GBR">🇬🇧 Reino Unido</option>
+              <option value="JPN">🇯🇵 Japón</option>
+              <option value="CAN">🇨🇦 Canadá</option>
+              <option value="AUS">🇦🇺 Australia</option>
+            </select>
+            <button class="btn-deploy-country" id="btn-deploy-country" title="Mudar vehículos y patrullar en este país">
+              <i class="fa-solid fa-location-arrow"></i> Desplegar Flota Aquí
+            </button>
+          </div>
+
+          <!-- Geo Scopes Navigator: 3D PLANETA / REGIÓN / CIUDAD / VEHÍCULO / MI GPS -->
+          <div class="geo-scope-bar">
+            <button class="scope-btn" id="scope-btn-globe"
+              title="Salir al Espacio // Ver Planeta Tierra 3D Rotativo">
+              <i class="fa-solid fa-globe text-cyan"></i> <span>PLANETA 3D</span>
+            </button>
+            <button class="scope-btn" id="scope-btn-region" title="Ver Región">
+              <i class="fa-solid fa-map"></i> <span>REGIÓN</span>
+            </button>
+            <button class="scope-btn" id="scope-btn-city" title="Ver Ciudad">
+              <i class="fa-solid fa-city"></i> <span>CIUDAD</span>
+            </button>
+            <button class="scope-btn active" id="scope-btn-veh" title="Seguir Vehículo en Calle (2D)">
+              <i class="fa-solid fa-crosshairs"></i> <span>VEHÍCULO</span>
+            </button>
+            <button class="scope-btn btn-my-gps" id="scope-btn-my-gps" title="Ubicar Mi Dispositivo Actual (GPS)">
+              <i class="fa-solid fa-location-arrow"></i> <span>MI GPS</span>
+            </button>
+          </div>
+
+          <div class="map-actions-dock">
+            <select id="map-tile-style-select" class="tactical-layer-select" title="Estilo de Mapa (Sin API Key)">
+              <option value="googleStreet" selected>🗺️ Callejero Global (Estilo Google)</option>
+              <option value="sat">🛰️ Satelital HD Órbita</option>
+              <option value="street">🌐 OpenStreetMap Mundial</option>
+              <option value="dark">🌑 Táctico Cyber Nocturno</option>
+            </select>
+            <button class="map-btn" id="btn-recenter" title="Re-centrar en el vehículo">
+              <i class="fa-solid fa-crosshairs"></i>
+            </button>
+            <button class="map-btn" id="btn-toggle-route-corridor" title="Mostrar/Ocultar pasillo de tolerancia">
+              <i class="fa-solid fa-draw-polygon"></i>
+            </button>
+            <button class="map-btn" id="btn-toggle-checkpoints" title="Mostrar Checkpoints">
+              <i class="fa-solid fa-location-dot"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Floating Geo-Orientation HUD Card (Bottom Left) -->
+        <div class="geo-orientation-hud" id="geo-orientation-hud">
+          <div class="geo-badge">
+            <i class="fa-solid fa-satellite text-cyan"></i>
+            <span id="geo-scale-label">NIVEL TÁCTICO LOCAL</span>
+          </div>
+          <div class="geo-coords-readout">
+            <div class="geo-place-name" id="geo-place-name">Buenos Aires &bull; Argentina</div>
+            <div class="geo-latlng" id="geo-latlng">-34.5770° S, -58.4005° O</div>
+          </div>
+        </div>
+
+        <!-- Simulation Toolbar on Bottom of Map -->
+        <div class="sim-floating-bar" id="sim-control-bar">
+          <div class="sim-meta">
+            <span class="sim-label">SIMULADOR EN TIEMPO REAL:</span>
+            <span class="sim-vehicle-target" id="sim-vehicle-name">Vehículo: Rhino 01 (Custodia Blindada)</span>
+          </div>
+          <div class="sim-buttons">
+            <button class="sim-action-btn" id="sim-play-btn" title="Iniciar/Pausar simulación">
+              <i class="fa-solid fa-play" id="sim-play-icon"></i>
+            </button>
+            <button class="sim-action-btn" id="sim-reset-btn" title="Reiniciar a inicio">
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
+            <button class="sim-danger-btn" id="sim-force-deviation-btn"
+              title="Simular que el vehículo dobla por calle prohibida">
+              <i class="fa-solid fa-arrow-turn-right"></i> SIMULAR DESVÍO AHORA
+            </button>
+          </div>
+          <div class="sim-speed-box">
+            <span>Vel:</span>
+            <span class="speed-number" id="sim-speed-display">48 km/h</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT SIDEBAR: Spy Cam Feed, Telemetry Readouts & Live Alerts Stream -->
+    <aside class="sidebar-right" id="sidebar-right">
+
+      <!-- Video Spy Cam Monitor Box -->
+      <div class="spycam-panel" id="spycam-panel">
+        <div class="panel-header">
+          <div class="cam-title">
+            <i class="fa-solid fa-eye text-amber"></i>
+            <h3>CÁMARA ESPÍA OCULTA</h3>
+          </div>
+          <span class="live-rec-badge"><i class="fa-solid fa-circle"></i> REC</span>
+        </div>
+
+        <!-- Video Simulation Screen with HUD -->
+        <div class="spycam-viewport" id="spycam-viewport">
+          <div class="hud-overlay">
+            <div class="hud-top">
+              <span class="hud-cam-id" id="hud-cam-id">CAM-ESP-01 // COVERT</span>
+              <span class="hud-timestamp" id="hud-cam-time">2026-10-07 16:45:12</span>
+            </div>
+
+            <div class="hud-center-crosshair">
+              <div class="crosshair-h"></div>
+              <div class="crosshair-v"></div>
+            </div>
+
+            <div class="hud-bottom">
+              <span class="hud-gps-coords" id="hud-gps-coords">-34.6037, -58.3816</span>
+              <span class="hud-status" id="hud-feed-status">IR VISIÓN: ACTIVA</span>
+            </div>
+          </div>
+
+          <!-- Video Mock / Canvas Rendering Road Simulation -->
+          <canvas id="camera-canvas" width="380" height="215"></canvas>
+
+          <!-- ESP32 Human & Motion Detection Real-time Tag -->
+          <div class="esp32-cam-detect-tag" id="esp32-cam-detect-tag">
+            <span class="node-live-dot" id="esp32-detect-dot"></span>
+            <span id="esp32-detect-text">SCANNER ESP32: VIGILANCIA ACTIVA</span>
+          </div>
+
+          <!-- Alert Warning Banner over Video when deviated -->
+          <div class="cam-alert-banner" id="cam-alert-banner">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>¡VEHÍCULO FUERA DE CORREDOR AUTORIZADO!</span>
+          </div>
+        </div>
+
+        <!-- Camera Control Bar: 4 Multispectral Modes -->
+        <div class="cam-controls">
+          <button class="cam-mode-btn active" id="btn-cam-normal" onclick="setCamMode('normal')">Color Óptico</button>
+          <button class="cam-mode-btn" id="btn-cam-night" onclick="setCamMode('night')">Fósforo Verde</button>
+          <button class="cam-mode-btn" id="btn-cam-thermal" onclick="setCamMode('thermal')">FLIR Térmica</button>
+          <button class="cam-mode-btn" id="btn-cam-lidar" onclick="setCamMode('lidar')">LiDAR 3D</button>
+          <button class="cam-snap-btn" id="btn-cam-snapshot" title="Capturar Fotograma de Evidencia">
+            <i class="fa-solid fa-camera"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- COCKPIT HUD MILITAR ULTRA-FUTURISTA (Gauges de Caza & Telemetría) -->
+      <div class="cockpit-hud-card">
+        <div class="panel-header">
+          <h3><i class="fa-solid fa-compass-drafting text-cyan"></i> CABINA HUD // TELEMETRÍA MILITAR</h3>
+          <span class="signal-badge" id="gps-sat-signal"><i class="fa-solid fa-satellite text-cyan"></i> STARLINK LEO 23ms</span>
+        </div>
+
+        <!-- Cockpit Instruments Dual Cluster -->
+        <div class="cockpit-cluster-row">
+          <!-- 1. Circular Vectorial Speedometer Gauge -->
+          <div class="cockpit-gauge-box">
+            <div class="gauge-svg-container">
+              <svg viewBox="0 0 120 120" class="gauge-svg">
+                <!-- Outer Track -->
+                <circle cx="60" cy="60" r="50" class="gauge-track" />
+                <!-- Active Arc -->
+                <circle cx="60" cy="60" r="50" class="gauge-progress" id="hud-gauge-progress" />
+              </svg>
+              <!-- Center Digital Speed -->
+              <div class="gauge-center-readout">
+                <span class="gauge-speed-val" id="hud-cockpit-speed">0</span>
+                <span class="gauge-speed-unit">KM/H</span>
+              </div>
+            </div>
+            <div class="gauge-label">VELOCÍMETRO VECTORIAL</div>
+          </div>
+
+          <!-- 2. Artificial Horizon / Attitude Indicator (Pitch & Roll) -->
+          <div class="cockpit-horizon-box">
+            <div class="horizon-sphere" id="hud-attitude-sphere">
+              <div class="horizon-sky"></div>
+              <div class="horizon-ground"></div>
+              <div class="horizon-line"></div>
+              <div class="horizon-pitch-ladder">
+                <div class="pitch-bar p-pos"><span>10</span></div>
+                <div class="pitch-bar p-zero"></div>
+                <div class="pitch-bar p-neg"><span>-10</span></div>
+              </div>
+              <div class="horizon-crosshair"></div>
+            </div>
+            <div class="horizon-label">HORIZONTE TÁCTICO (PITCH/ROLL)</div>
+          </div>
+        </div>
+
+        <!-- 3. Compass Heading Ribbon Tape -->
+        <div class="cockpit-compass-tape-box">
+          <div class="compass-tape-window">
+            <div class="compass-tape-marker">▲</div>
+            <div class="compass-tape-strip" id="hud-compass-strip">
+              <span>N</span><span>15</span><span>30</span><span>NE</span><span>60</span><span>75</span><span>E</span>
+              <span>105</span><span>120</span><span>SE</span><span>150</span><span>165</span><span>S</span>
+              <span>195</span><span>210</span><span>SW</span><span>240</span><span>255</span><span>W</span>
+              <span>285</span><span>300</span><span>NW</span><span>330</span><span>345</span><span>N</span>
+            </div>
+          </div>
+          <div class="compass-readout-strip">
+            <span class="font-mono text-cyan" id="t-heading">072° NE</span>
+            <span class="font-mono text-green" id="hud-gforce">G-FORCE: 0.08G</span>
+          </div>
+        </div>
+
+        <!-- Telemetry Details Grid -->
+        <div class="telemetry-grid mt-2">
+          <div class="t-item">
+            <span class="t-label">ESTADO CORREDOR</span>
+            <span class="t-value text-green" id="t-route-status">EN RUTA SEGURA</span>
+          </div>
+          <div class="t-item">
+            <span class="t-label">BATERÍA TRACKER</span>
+            <span class="t-value" id="t-battery">98% <i class="fa-solid fa-battery-full text-green"></i></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Incidents & Alert Logs -->
+      <div class="alerts-feed-panel">
+        <div class="panel-header">
+          <h3><i class="fa-solid fa-bell text-red"></i> REGISTRO DE ALERTAS</h3>
+          <button class="btn-clear-alerts" id="btn-clear-alerts" title="Limpiar alertas vistas">Limpiar</button>
+        </div>
+
+        <div class="alerts-stream" id="alerts-stream">
+          <!-- Populated in real-time -->
+          <div class="alert-empty-hint" id="alert-empty-hint">
+            <i class="fa-solid fa-shield-check"></i>
+            <span>Sin infracciones detectadas. El vehículo se encuentra en corredor seguro.</span>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Bottom Aerospace Feature Bar (Aitue Style) -->
+  <footer class="bottom-telemetry-bar">
+    <div class="ticker-item"><i class="fa-solid fa-satellite text-cyan"></i> <span><b>Satelital + LTE:</b> Conectividad
+        integrada de ultra-baja latencia</span></div>
+    <div class="ticker-item"><i class="fa-solid fa-route text-green"></i> <span><b>En movimiento:</b> Monitoreo de
+        corredores y checkpoints</span></div>
+    <div class="ticker-item"><i class="fa-solid fa-earth-americas text-cyan"></i> <span><b>Zonas remotas:</b>
+        Compatibilidad Starlink Mini & Antenas</span></div>
+    <div class="ticker-item"><i class="fa-solid fa-video text-amber"></i> <span><b>Cámaras Espía:</b> Stream encubierto
+        HD con telemetría HUD</span></div>
+    <div class="ticker-item"><i class="fa-solid fa-shield-halved text-pink"></i> <span><b>Anti-Desvío:</b> Detección
+        geométrica y despacho SOS</span></div>
+  </footer>
+
+  <!-- MODAL: Vincular / Emparejar Dispositivos (GPS + Cámara + Vehículo) -->
+  <div class="modal-overlay" id="pairing-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-link text-cyan"></i> GESTIÓN Y VINCULACIÓN DE DISPOSITIVOS</h3>
+        <button class="modal-close-btn" id="modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-desc">
+          Configura si el <b>GPS Rhino</b> y la <b>Cámara Espía</b> trabajan como un <b>conjunto unificado</b> en un
+          vehículo, o si monitoreas cada dispositivo por separado.
+        </p>
+
+        <form id="pairing-form">
+          <div class="form-group">
+            <label for="form-vehicle-name">Nombre / Identificador del Vehículo:</label>
+            <input type="text" id="form-vehicle-name" class="tactical-input"
+              placeholder="Ej: Camioneta Custodia 01 (Toyota Hilux)" required>
+          </div>
+
+          <div class="form-group">
+            <label for="form-plate">Patente / Matrícula:</label>
+            <input type="text" id="form-plate" class="tactical-input" placeholder="Ej: AF-892-XZ">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group half">
+              <label for="form-gps-select">GPS Rhino Asignado:</label>
+              <select id="form-gps-select" class="tactical-select">
+                <option value="none">-- Sin GPS (O solo cámara) --</option>
+                <option value="RHINO-GPS-01" selected>Rhino OBD-II #8942 (Activo)</option>
+                <option value="RHINO-GPS-02">Rhino Hardwire #3310 (Activo)</option>
+                <option value="RHINO-GPS-03">Rhino Magnético #7721 (Standby)</option>
+              </select>
+            </div>
+
+            <div class="form-group half">
+              <label for="form-cam-select">Cámara Espía Asignada:</label>
+              <select id="form-cam-select" class="tactical-select">
+                <option value="none">-- Sin Cámara (Solo GPS) --</option>
+                <option value="CAM-ESP-01" selected>Cámara Oculta Dash #01 (Stream HD)</option>
+                <option value="CAM-ESP-02">Micro-Cámara Interior #02 (IR Oculta)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="form-route-assign">Corredor de Seguridad Asignado:</label>
+            <select id="form-route-assign" class="tactical-select">
+              <option value="corredor-norte">Corredor Norte (Tolerancia 60m con 3 Checkpoints)</option>
+              <option value="ruta-custodia">Ruta Custodia Centro (Tolerancia 40m con 4 Checkpoints)</option>
+            </select>
+          </div>
+
+          <div class="pairing-mode-box">
+            <div class="mode-badge-preview" id="mode-badge-preview">
+              <i class="fa-solid fa-link text-green"></i> <span>MODO CONJUNTO COMPLETO: GPS + CÁMARA ESPÍA
+                VINCULADOS</span>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-tactical btn-secondary" id="btn-cancel-modal">Cancelar</button>
+            <button type="submit" class="btn-tactical btn-primary">Guardar Configuración</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Snapshot Viewer Modal -->
+  <div class="modal-overlay" id="snapshot-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-camera-retro text-amber"></i> CAPTURA DE EVIDENCIA DE CÁMARA ESPÍA</h3>
+        <button class="modal-close-btn" id="snapshot-close-btn">&times;</button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="snapshot-img-preview" src="" alt="Captura de evidencia"
+          style="width:100%; border-radius:6px; border:1px solid #334155;">
+        <p class="mt-2 text-muted" id="snapshot-details"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- WhatsApp Dispatch Simulation Modal -->
+  <div class="modal-overlay" id="dispatch-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-brands fa-whatsapp text-green"></i> DESPACHO AUTOMÁTICO DE SEGURIDAD</h3>
+        <button class="modal-close-btn" id="dispatch-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="dispatch-bubble">
+          <div class="dispatch-bubble-header">
+            <i class="fa-solid fa-tower-broadcast text-cyan"></i>
+            <span>CENTRAL RHINO &bull; CANAL DE COMUNICACIÓN CRÍTICA</span>
+            <span class="dispatch-tag">ENVIADO</span>
+          </div>
+          <div class="dispatch-bubble-body" id="dispatch-message-content">
+            <!-- Dynamic payload -->
+          </div>
+        </div>
+        <div class="dispatch-actions mt-3">
+          <button class="btn-tactical btn-secondary" id="btn-copy-dispatch">
+            <i class="fa-solid fa-copy"></i> Copiar Mensaje
+          </button>
+          <button class="btn-tactical btn-primary" id="btn-open-wa-direct">
+            <i class="fa-brands fa-whatsapp"></i> Abrir en WhatsApp Web
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Firmware Arduino ESP32 (.ino) para Detección de Movimiento & Personas -->
+  <div class="modal-overlay" id="esp32-code-modal">
+    <div class="modal-card modal-code-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-microchip text-cyan"></i> FIRMWARE ARDUINO ESP32 // DETECCIÓN DE MOVIMIENTO Y PERSONAS</h3>
+        <button class="modal-close-btn" id="esp32-code-modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          Código listo para compilar en <b>Arduino IDE</b> o <b>PlatformIO</b>. Conecta tu ESP32 con sensor PIR HC-SR501 y radar mmWave LD2410 al WiFi y transmite telemetría JSON en tiempo real a este panel.
+        </p>
+
+        <div class="code-copy-bar">
+          <span class="font-mono text-cyan"><i class="fa-solid fa-file-code"></i> rhino_esp32_motion_detector.ino</span>
+          <button class="btn-tactical btn-primary btn-sm" id="btn-copy-esp32-code">
+            <i class="fa-solid fa-copy"></i> Copiar Código
+          </button>
+        </div>
+
+        <pre class="esp32-code-block" id="esp32-code-pre"><code id="esp32-code-text">// Firmware Arduino ESP32 cargando...</code></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-tactical btn-secondary" id="btn-close-esp32-code-footer">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Tactical Perimeter Flash when Alert/Panic occurs -->
+  <div class="tactical-sos-flash" id="tactical-sos-flash"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Main Application Logic -->
+  <script src="app.js"></script>
+</body>
+
+</html>
