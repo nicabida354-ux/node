@@ -384,7 +384,7 @@
     <!-- CENTER: Main Live Map & Simulator Control -->
     <section class="center-stage">
       <!-- Live Map Container -->
-      <div class="map-wrapper">
+      <div class="map-wrapper mode-3d-tilt">
         <!-- Floating Interactive Route Drawing HUD Bar -->
         <div class="drawing-hud-bar" id="drawing-hud-bar" style="display: none;">
           <div class="drawing-hud-info">
@@ -504,10 +504,10 @@
                 <option value="googleStreet">🗺️ Callejero Claro (Modo Claro)</option>
                 <option value="street">🌐 OpenStreetMap</option>
               </select>
-              <button class="map-btn btn-3d-tilt" id="btn-toggle-3d-tilt" title="Alternar Perspectiva 3D Táctica (Inclinación de Cámara 3D)">
-                <i class="fa-solid fa-cube text-cyan"></i> <span>3D</span>
+              <button class="map-btn btn-3d-tilt active" id="btn-toggle-3d-tilt" title="Alternar Perspectiva 3D Táctica (Inclinación de Cámara 3D)">
+                <i class="fa-solid fa-cube text-cyan"></i> <span>3D ON</span>
               </button>
-              <button class="map-btn btn-buildings-3d" id="btn-toggle-3d-buildings" title="Activar/Desactivar Edificios 3D Volumétricos en Calles (Estilo Google Maps 3D)">
+              <button class="map-btn btn-buildings-3d active" id="btn-toggle-3d-buildings" title="Activar/Desactivar Edificios 3D Volumétricos en Calles (Estilo Google Maps 3D)">
                 <i class="fa-solid fa-city text-cyan"></i> <span>EDIFICIOS 3D</span>
               </button>
               <button class="map-btn" id="btn-recenter" title="Re-centrar en el vehículo">

@@ -112,8 +112,9 @@ const state = {
   tempDrawnPoints: [],
   tempDrawnLayers: [],
   customRouteCounter: 1,
-  currentViewMode: 'globe-3d', // 'globe-3d' (spherical orbit) | 'surface-2d' (planar street)
+  currentViewMode: 'surface-2d', // Default to 2D/3D street map so user sees the real map immediately
   show3DBuildings: true,
+  activeBuildings: [], // Array of active 3D building collision bounds
   inmersiveNav3D: false,
   navVoiceEnabled: true,
   lastSpokenManeuver: '',
@@ -990,6 +991,7 @@ const Globe3D = {
 // --- Hybrid 3D Orbit <-> 2D Surface Transitions ---
 function transitionToSurface2D(targetCoords = [-34.5770, -58.4005], zoomLevel = 13, countryObj = null) {
   state.currentViewMode = 'surface-2d';
+  document.body.classList.remove('mode-globe-active');
 
   const c = countryObj || getClosestCountry(targetCoords[0], targetCoords[1]);
   state.selectedCountryCode = c.code || 'ARG';
@@ -1000,32 +1002,26 @@ function transitionToSurface2D(targetCoords = [-34.5770, -58.4005], zoomLevel = 
   if (globeSelect && c.code && GLOBAL_COUNTRIES[c.code]) globeSelect.value = c.code;
   if (surfaceSelect && c.code && GLOBAL_COUNTRIES[c.code]) surfaceSelect.value = c.code;
 
-  // Immediately deploy fleet, localized route & telemetry to target country
-  if (c.code && GLOBAL_COUNTRIES[c.code]) {
-    deployFleetToCountry(c.code);
-  }
-
   // Update scope navigation buttons
   document.querySelectorAll('.scope-btn').forEach(btn => btn.classList.remove('active'));
   const vehBtn = document.getElementById('scope-btn-veh');
   if (vehBtn) vehBtn.classList.add('active');
 
-  // Fade out 3D Globe & floating HUD
+  // Immediately hide 3D Globe & floating HUD
   const globeContainer = document.getElementById('globe-3d-container');
   const globeHUD = document.getElementById('globe-hud-overlay');
   const tacticalMap = document.getElementById('tactical-map');
 
   if (globeHUD) {
+    globeHUD.style.display = 'none';
     globeHUD.style.opacity = '0';
     globeHUD.style.pointerEvents = 'none';
   }
   if (globeContainer) {
+    globeContainer.style.display = 'none';
     globeContainer.style.opacity = '0';
     globeContainer.style.pointerEvents = 'none';
-    setTimeout(() => {
-      globeContainer.style.visibility = 'hidden';
-      Globe3D.stopAnimation();
-    }, 400);
+    Globe3D.stopAnimation();
   }
 
   // Fade in 2D Planar Surface Map
@@ -1043,20 +1039,22 @@ function transitionToSurface2D(targetCoords = [-34.5770, -58.4005], zoomLevel = 
       updateMapTiles();
       drawActiveRoute();
       renderVehicleMarkers();
+      init3DBuildings();
       updateGeoOrientationHUD(`${c.name} • ${c.capital}`);
     }
-  }, 100);
+  }, 80);
 
   addAlertLog({
     severity: 'INFO',
-    title: `TRANSICIÓN: ${c.name.toUpperCase()}`,
-    msg: `Ingreso a nivel callejero en ${c.capital} (${c.name}). Controles planos 2D activos sin rotación esférica.`,
+    title: `MAPA 3D CALLEJERO: ${c.name.toUpperCase()}`,
+    msg: `Navegación 3D en ${c.capital} (${c.name}). Corredor vial activo con detección de colisión en edificios.`,
     time: new Date().toLocaleTimeString()
   });
 }
 
 function transitionToOrbit3D() {
   state.currentViewMode = 'globe-3d';
+  document.body.classList.add('mode-globe-active');
 
   // Mark globe button active
   document.querySelectorAll('.scope-btn').forEach(btn => btn.classList.remove('active'));
@@ -1068,11 +1066,14 @@ function transitionToOrbit3D() {
   const tacticalMap = document.getElementById('tactical-map');
 
   if (globeContainer) {
+    globeContainer.style.display = 'block';
     globeContainer.style.visibility = 'visible';
     globeContainer.style.opacity = '1';
     globeContainer.style.pointerEvents = 'auto';
   }
   if (globeHUD) {
+    globeHUD.style.display = 'flex';
+    globeHUD.classList.remove('hud-hidden');
     globeHUD.style.opacity = '1';
     globeHUD.style.pointerEvents = 'auto';
   }
@@ -1081,7 +1082,7 @@ function transitionToOrbit3D() {
     tacticalMap.style.pointerEvents = 'none';
     setTimeout(() => {
       tacticalMap.style.visibility = 'hidden';
-    }, 400);
+    }, 300);
   }
 
   Globe3D.startAnimation();
@@ -1120,14 +1121,7 @@ function initMap() {
   updateMapTiles(isLightTheme ? 'googleStreet' : 'dark');
   map.on('click', onMapClick);
 
-  // When zooming out completely in 2D mode (zoom <= 2), exit planet back to 3D Orbit!
-  map.on('zoomend', () => {
-    if (state.currentViewMode === 'surface-2d' && map.getZoom() <= 2) {
-      transitionToOrbit3D();
-    } else {
-      updateGeoOrientationHUD();
-    }
-  });
+  map.on('zoomend', updateGeoOrientationHUD);
   map.on('moveend', updateGeoOrientationHUD);
 
   drawActiveRoute();
@@ -1388,63 +1382,107 @@ function init3DBuildings() {
     buildings3DLayerGroup.clearLayers();
   }
 
+  state.activeBuildings = [];
   if (!state.show3DBuildings) return;
 
-  const c = GLOBAL_COUNTRIES[state.selectedCountryCode] || GLOBAL_COUNTRIES.ARG;
-  const lat = c.lat;
-  const lng = c.lng;
+  const curVeh = getSelectedVehicle();
+  const route = (curVeh && state.routes[curVeh.routeId]) ? state.routes[curVeh.routeId] : Object.values(state.routes)[0];
+  if (!route || !route.path || route.path.length < 2) return;
 
-  // Varied urban architectural blocks around city hub
-  const BUILDING_OFFSETS = [
-    { dLat: -0.012, dLng: -0.018, w: 32, d: 28, h: 85, type: 'skysc' },
-    { dLat: -0.014, dLng: -0.011, w: 28, d: 24, h: 65, type: 'skysc' },
-    { dLat: -0.009, dLng: -0.021, w: 36, d: 30, h: 50, type: 'office' },
-    { dLat: -0.008, dLng: -0.008, w: 24, d: 24, h: 42, type: 'office' },
-    { dLat: -0.003, dLng: +0.005, w: 30, d: 28, h: 90, type: 'skysc' },
-    { dLat: -0.006, dLng: +0.012, w: 26, d: 26, h: 55, type: 'office' },
-    { dLat: +0.002, dLng: +0.015, w: 34, d: 32, h: 75, type: 'skysc' },
-    { dLat: +0.008, dLng: +0.022, w: 28, d: 24, h: 48, type: 'office' },
-    { dLat: +0.012, dLng: +0.012, w: 38, d: 35, h: 95, type: 'skysc' },
-    { dLat: +0.015, dLng: +0.004, w: 30, d: 30, h: 60, type: 'office' },
-    { dLat: +0.017, dLng: -0.008, w: 25, d: 25, h: 45, type: 'office' },
-    { dLat: +0.012, dLng: -0.015, w: 32, d: 28, h: 70, type: 'skysc' },
-    { dLat: +0.006, dLng: -0.024, w: 28, d: 26, h: 52, type: 'office' },
-    { dLat: +0.001, dLng: -0.012, w: 26, d: 24, h: 38, type: 'office' },
-    { dLat: -0.018, dLng: -0.005, w: 35, d: 30, h: 72, type: 'skysc' },
-    { dLat: -0.016, dLng: +0.016, w: 30, d: 28, h: 58, type: 'office' },
-    { dLat: +0.005, dLng: +0.026, w: 26, d: 26, h: 40, type: 'office' },
-    { dLat: +0.021, dLng: +0.018, w: 40, d: 32, h: 105, type: 'skysc' },
-    { dLat: +0.022, dLng: -0.012, w: 32, d: 30, h: 68, type: 'office' },
-    { dLat: -0.002, dLng: -0.028, w: 34, d: 28, h: 62, type: 'skysc' }
+  const path = route.path;
+  const buildingNames = [
+    'Torre Corporativa Norte', 'Edificio Financiero BBVA', 'Centro Empresarial Platinum',
+    'Torre Santander', 'Edificio Alianza Seguros', 'Torre Interbank', 'Centro de Negocios Retiro',
+    'Torre Telecom 5G', 'Edificio Bóveda Central', 'Torre San Isidro', 'Edificio Miraflores',
+    'Torre Corporativa del Sol', 'Centro Logístico Hangar', 'Torre Atlas Capital'
   ];
 
-  BUILDING_OFFSETS.forEach(b => {
-    const bLat = lat + b.dLat;
-    const bLng = lng + b.dLng;
+  let bCounter = 0;
 
-    const bIcon = L.divIcon({
-      className: 'building-3d-prism-wrap',
-      html: `
-        <div class="building-3d-prism" style="width:${b.w}px; height:${b.d}px;">
-          <div class="prism-wall" style="width:${b.w}px; height:${b.h}px; bottom:0; left:0; transform: translateZ(${b.d/2}px);"></div>
-          <div class="prism-wall" style="width:${b.w}px; height:${b.h}px; bottom:0; left:0; transform: rotateY(180deg) translateZ(${b.d/2}px);"></div>
-          <div class="prism-wall" style="width:${b.d}px; height:${b.h}px; bottom:0; left:${(b.w-b.d)/2}px; transform: rotateY(-90deg) translateZ(${b.w/2}px);"></div>
-          <div class="prism-wall" style="width:${b.d}px; height:${b.h}px; bottom:0; left:${(b.w-b.d)/2}px; transform: rotateY(90deg) translateZ(${b.w/2}px);"></div>
-          <div class="prism-roof" style="width:${b.w}px; height:${b.d}px; top:0; left:0; transform: translateZ(${b.h}px);">
-            ${b.type === 'skysc' ? '<div class="building-roof-antenna"></div>' : ''}
-          </div>
-        </div>
-      `,
-      iconSize: [b.w, b.d],
-      iconAnchor: [b.w / 2, b.d / 2]
+  // Place buildings along sidewalks on BOTH SIDES of each route street segment (offset 38-44m from centerline)
+  // This guarantees the roadway is 100% open and vehicles never cross through buildings unless deviated!
+  for (let i = 0; i < path.length - 1; i++) {
+    const p1 = path[i];
+    const p2 = path[i + 1];
+
+    const dLat = p2[0] - p1[0];
+    const dLng = p2[1] - p1[1];
+    const len = Math.hypot(dLat, dLng) || 1;
+
+    // Unit perpendicular vector (normal to street direction)
+    const unLat = -dLng / len;
+    const unLng = dLat / len;
+
+    // Perpendicular offset in degrees (~40 meters)
+    const streetOffsetDeg = 0.00038;
+
+    // Buildings placed at fractions along the segment
+    const midFractions = [0.35, 0.70];
+
+    midFractions.forEach((f, fIdx) => {
+      const baseLat = p1[0] + f * dLat;
+      const baseLng = p1[1] + f * dLng;
+
+      // Left building
+      const leftLat = baseLat + unLat * streetOffsetDeg;
+      const leftLng = baseLng + unLng * streetOffsetDeg;
+      // Right building
+      const rightLat = baseLat - unLat * streetOffsetDeg;
+      const rightLng = baseLng - unLng * streetOffsetDeg;
+
+      [
+        { lat: leftLat, lng: leftLng, side: 'Izquierda', type: fIdx === 0 ? 'skysc' : 'office', h: 65 + (bCounter % 4) * 15, w: 32, d: 28 },
+        { lat: rightLat, lng: rightLng, side: 'Derecha', type: fIdx === 1 ? 'skysc' : 'office', h: 50 + ((bCounter + 2) % 3) * 18, w: 30, d: 26 }
+      ].forEach(b => {
+        bCounter++;
+        const bName = buildingNames[(bCounter - 1) % buildingNames.length];
+
+        // Register in activeBuildings for real-time collision detection
+        state.activeBuildings.push({
+          id: `bld-${bCounter}`,
+          name: `${bName} #${bCounter}`,
+          lat: b.lat,
+          lng: b.lng,
+          radiusMeters: 18,
+          type: b.type
+        });
+
+        const bIcon = L.divIcon({
+          className: 'building-3d-prism-wrap',
+          html: `
+            <div class="building-3d-prism" style="width:${b.w}px; height:${b.d}px;">
+              <div class="prism-wall" style="width:${b.w}px; height:${b.h}px; bottom:0; left:0; transform: translateZ(${b.d/2}px);"></div>
+              <div class="prism-wall" style="width:${b.w}px; height:${b.h}px; bottom:0; left:0; transform: rotateY(180deg) translateZ(${b.d/2}px);"></div>
+              <div class="prism-wall" style="width:${b.d}px; height:${b.h}px; bottom:0; left:${(b.w-b.d)/2}px; transform: rotateY(-90deg) translateZ(${b.w/2}px);"></div>
+              <div class="prism-wall" style="width:${b.d}px; height:${b.h}px; bottom:0; left:${(b.w-b.d)/2}px; transform: rotateY(90deg) translateZ(${b.w/2}px);"></div>
+              <div class="prism-roof" style="width:${b.w}px; height:${b.d}px; top:0; left:0; transform: translateZ(${b.h}px);">
+                ${b.type === 'skysc' ? '<div class="building-roof-antenna"></div>' : ''}
+              </div>
+            </div>
+          `,
+          iconSize: [b.w, b.d],
+          iconAnchor: [b.w / 2, b.d / 2]
+        });
+
+        L.marker([b.lat, b.lng], { icon: bIcon, interactive: false }).addTo(buildings3DLayerGroup);
+      });
     });
+  }
 
-    L.marker([bLat, bLng], { icon: bIcon, interactive: false }).addTo(buildings3DLayerGroup);
+  // Landmark: Hangar Central at Destination
+  const lastPt = path[path.length - 1];
+  const destLat = lastPt[0] + 0.00045;
+  const destLng = lastPt[1] + 0.00045;
+
+  state.activeBuildings.push({
+    id: 'bld-dest-hangar',
+    name: 'Hangar Central (Zona Segura)',
+    lat: destLat,
+    lng: destLng,
+    radiusMeters: 22,
+    type: 'hangar'
   });
 
-  // Landmark: Destino / Hangar Seguro 3D con helipuerto
-  const destLat = lat + 0.010;
-  const destLng = lng + 0.018;
   const destIcon = L.divIcon({
     className: 'building-landmark-dest-wrap',
     html: `
@@ -1644,6 +1682,28 @@ function deployFleetToCountry(countryCode) {
   const lat = c.lat;
   const lng = c.lng;
 
+  // Immediately ensure 3D globe is hidden and 3D street map is active!
+  state.currentViewMode = 'surface-2d';
+  document.body.classList.remove('mode-globe-active');
+  const globeContainer = document.getElementById('globe-3d-container');
+  const globeHUD = document.getElementById('globe-hud-overlay');
+  const tacticalMap = document.getElementById('tactical-map');
+
+  if (globeContainer) {
+    globeContainer.style.display = 'none';
+    globeContainer.style.opacity = '0';
+    Globe3D.stopAnimation();
+  }
+  if (globeHUD) {
+    globeHUD.style.display = 'none';
+    globeHUD.style.opacity = '0';
+  }
+  if (tacticalMap) {
+    tacticalMap.style.visibility = 'visible';
+    tacticalMap.style.opacity = '1';
+    tacticalMap.style.pointerEvents = 'auto';
+  }
+
   // Sync both country dropdown selectors
   const globeSelect = document.getElementById('globe-country-select');
   const surfaceSelect = document.getElementById('surface-country-select');
@@ -1653,20 +1713,52 @@ function deployFleetToCountry(countryCode) {
   const newRouteId = `patrulla-${c.code.toLowerCase()}`;
   const routeName = `Corredor Seguro ${c.name} (${c.capital})`;
 
-  // Realistic 5-point patrol route around the city center
-  const path = [
-    [lat - 0.015, lng - 0.015],
-    [lat - 0.005, lng + 0.010],
-    [lat + 0.010, lng + 0.018],
-    [lat + 0.018, lng - 0.005],
-    [lat + 0.005, lng - 0.020]
-  ];
-
-  const checkpoints = [
-    { name: `Punto 1: Base ${c.capital}`, lat: path[0][0], lng: path[0][1], passed: true },
-    { name: `Punto 2: Control Central ${c.name}`, lat: path[1][0], lng: path[1][1], passed: false },
-    { name: `Punto 3: Destino Hangar`, lat: path[2][0], lng: path[2][1], passed: false }
-  ];
+  // Realistic major avenues and street pathways per country
+  let path, checkpoints;
+  if (countryCode === 'PER') {
+    // Lima: Av. Javier Prado Este -> Cruce Vía Expresa Paseo de la República -> Av. República de Panamá
+    path = [
+      [-12.0880, -77.0350],
+      [-12.0910, -77.0270],
+      [-12.0990, -77.0250],
+      [-12.1070, -77.0240],
+      [-12.1150, -77.0230]
+    ];
+    checkpoints = [
+      { name: 'Punto 1: Base San Isidro (Av. Javier Prado)', lat: path[0][0], lng: path[0][1], passed: true },
+      { name: 'Punto 2: Control Vía Expresa Paseo de la República', lat: path[1][0], lng: path[1][1], passed: false },
+      { name: 'Punto 3: Destino Hangar Sur', lat: path[4][0], lng: path[4][1], passed: false }
+    ];
+  } else if (countryCode === 'ARG') {
+    // Buenos Aires: Av. del Libertador -> Av. Figueroa Alcorta -> Aeroparque
+    path = [
+      [-34.5885, -58.3840],
+      [-34.5770, -58.4005],
+      [-34.5620, -58.4210],
+      [-34.5460, -58.4420],
+      [-34.5350, -58.4590],
+      [-34.5200, -58.4800]
+    ];
+    checkpoints = [
+      { name: 'Punto 1: Base Logística Retiro', lat: path[0][0], lng: path[0][1], passed: true },
+      { name: 'Punto 2: Control Av. del Libertador', lat: path[2][0], lng: path[2][1], passed: false },
+      { name: 'Punto 3: Destino Hangar Aeroparque', lat: path[5][0], lng: path[5][1], passed: false }
+    ];
+  } else {
+    // Urban orthogonal avenue grid for other cities worldwide
+    path = [
+      [lat - 0.012, lng - 0.012],
+      [lat - 0.012, lng + 0.008],
+      [lat + 0.006, lng + 0.008],
+      [lat + 0.006, lng - 0.004],
+      [lat + 0.014, lng - 0.004]
+    ];
+    checkpoints = [
+      { name: `Punto 1: Base ${c.capital}`, lat: path[0][0], lng: path[0][1], passed: true },
+      { name: `Punto 2: Control Central ${c.name}`, lat: path[2][0], lng: path[2][1], passed: false },
+      { name: `Punto 3: Destino Hangar`, lat: path[4][0], lng: path[4][1], passed: false }
+    ];
+  }
 
   state.routes[newRouteId] = {
     id: newRouteId,
@@ -1676,7 +1768,7 @@ function deployFleetToCountry(countryCode) {
     checkpoints: checkpoints
   };
 
-  // Re-deploy vehicles
+  // Re-deploy vehicles along street avenue
   state.vehicles[0].routeId = newRouteId;
   state.vehicles[0].lat = path[0][0];
   state.vehicles[0].lng = path[0][1];
@@ -1690,6 +1782,7 @@ function deployFleetToCountry(countryCode) {
     state.vehicles[1].lng = path[1][1];
     state.vehicles[1].simIndex = 0.3;
     state.vehicles[1].status = 'normal';
+    state.vehicles[1].isDeviatedManually = false;
   }
 
   // Update Route Selector in sidebar
@@ -1706,19 +1799,20 @@ function deployFleetToCountry(countryCode) {
   }
 
   if (map) {
-    map.flyTo([lat, lng], 13, { duration: 1.2 });
+    map.flyTo(path[0], 14, { duration: 1.2 });
   }
 
   drawActiveRoute();
   renderVehicleMarkers();
+  init3DBuildings();
   updateGeoOrientationHUD(`${c.name} • ${c.capital}`);
   updateTelemetryDisplay(getSelectedVehicle());
-  init3DBuildings();
 
-  addAlertItem({
-    title: `FLOTA TRASLADADA A ${c.name.toUpperCase()}`,
-    desc: `Móviles ${state.vehicles[0].plate} y ${state.vehicles[1] ? state.vehicles[1].plate : ''} patrullando en ${c.capital}. Corredor autorizado activo.`,
-    severity: 'info'
+  addAlertLog({
+    severity: 'INFO',
+    title: `FLOTA EN ${c.name.toUpperCase()} (MODO 3D)`,
+    msg: `Móviles patrullando en ${c.capital}. Calzada vial activa entre edificios 3D volumétricos con detección de colisión.`,
+    time: new Date().toLocaleTimeString()
   });
 }
 
@@ -1890,16 +1984,18 @@ function renderVehicleMarkers() {
   state.vehicles.forEach(veh => {
     const isSelected = veh.id === state.selectedVehicleId;
     const isDeviated = veh.status === 'deviated';
+    const isCrashed = veh.status === 'crashed';
 
     const customIcon = L.divIcon({
       className: 'tactical-marker-container',
       html: `
+        ${isCrashed ? '<div class="crash-impact-burst">💥 IMPACTO</div>' : ''}
         <div class="vehicle-headlight-beam" style="transform: rotate(${veh.heading}deg);"></div>
-        <div class="tactical-vehicle-icon ${isDeviated ? 'deviated' : ''}" style="border-color:${isSelected ? '#22d3ee' : '#38bdf8'}; transform: rotate(${veh.heading}deg);">
+        <div class="tactical-vehicle-icon ${isCrashed ? 'crashed' : (isDeviated ? 'deviated' : '')}" style="border-color:${isCrashed ? '#ff0055' : (isSelected ? '#22d3ee' : '#38bdf8')}; transform: rotate(${veh.heading}deg);">
           <i class="fa-solid fa-location-arrow"></i>
         </div>
-        <div class="tactical-marker-label" style="${isDeviated ? 'border-color:#ef4444; color:#ef4444;' : ''}">
-          ${veh.plate} &bull; ${veh.speed} km/h
+        <div class="tactical-marker-label" style="${isCrashed ? 'border-color:#ff0055; color:#ff0055; background:rgba(255,0,85,0.25);' : (isDeviated ? 'border-color:#ef4444; color:#ef4444;' : '')}">
+          ${isCrashed ? `¡COLISIÓN! ${veh.plate}` : `${veh.plate} &bull; ${veh.speed} km/h`}
         </div>
       `,
       iconSize: [42, 60],
@@ -1963,11 +2059,33 @@ function calculateDeviationDistance(veh, route) {
   return minDistance;
 }
 
-// --- Check and Trigger Alerts ---
+// --- Check and Trigger Alerts (Street Compliance + Building Collisions) ---
 function verifyRouteCompliance(veh) {
   const route = state.routes[veh.routeId];
   if (!route) return;
 
+  // 1. Building Collision Engine (Vehicles cannot pass through buildings!)
+  let collidedBuilding = null;
+  if (state.activeBuildings && state.activeBuildings.length > 0) {
+    for (const b of state.activeBuildings) {
+      const d = getDistanceMeters(veh.lat, veh.lng, b.lat, b.lng);
+      if (d <= b.radiusMeters) {
+        collidedBuilding = b;
+        break;
+      }
+    }
+  }
+
+  if (collidedBuilding) {
+    if (veh.status !== 'crashed') {
+      veh.status = 'crashed';
+      veh.speed = 0; // Immediate full stop on impact
+      triggerCollisionAlert(veh, collidedBuilding);
+    }
+    return;
+  }
+
+  // 2. Roadway / Corridor Deviation Detection (Must stay on authorized streets)
   const distMeters = calculateDeviationDistance(veh, route);
   veh.deviationDistance = Math.round(distMeters);
 
@@ -1977,16 +2095,58 @@ function verifyRouteCompliance(veh) {
       triggerRouteAlert(veh, distMeters, route.toleranceMeters);
     }
   } else {
-    if (veh.status === 'deviated') {
+    if (veh.status === 'deviated' || veh.status === 'crashed') {
       veh.status = 'normal';
       addAlertLog({
         severity: 'INFO',
-        title: `Retorno a Corredor Seguro`,
-        msg: `${veh.name} volvió a la ruta autorizada (${Math.round(distMeters)}m del eje).`,
+        title: `Retorno a Calzada Segura`,
+        msg: `${veh.name} volvió a circular por la calle autorizada (${Math.round(distMeters)}m del eje central). Perímetro despejado.`,
         time: new Date().toLocaleTimeString()
       });
     }
   }
+}
+
+function triggerCollisionAlert(veh, building) {
+  state.alertCount++;
+  playAlertSiren();
+
+  const alertData = {
+    severity: 'CRÍTICA',
+    title: `🚨 ¡ALERTA DE COLISIÓN CON EDIFICIO!`,
+    msg: `¡IMPACTO NO VIAL! ${veh.name} (${veh.plate}) ha colisionado contra ${building.name}. Vehículo detenido fuera de la calzada pública.`,
+    time: new Date().toLocaleTimeString(),
+    vehicleId: veh.id
+  };
+
+  addAlertLog(alertData);
+  updateAlertsUI();
+
+  // Fullscreen tactical flash
+  const sosFlash = document.getElementById('tactical-sos-flash');
+  if (sosFlash) {
+    sosFlash.classList.add('active');
+    setTimeout(() => sosFlash.classList.remove('active'), 1200);
+  }
+
+  // Camera alert banner
+  if (veh.id === state.selectedVehicleId) {
+    const camAlertBanner = document.getElementById('cam-alert-banner');
+    if (camAlertBanner) {
+      camAlertBanner.classList.add('active');
+      camAlertBanner.innerText = `🚨 COLISIÓN / ACCIDENTE: ${building.name.toUpperCase()}`;
+    }
+  }
+
+  // Navigation HUD warning
+  const navHUD = document.getElementById('nav-turn-hud');
+  if (navHUD) {
+    navHUD.classList.add('nav-alert-collision');
+    setTimeout(() => navHUD.classList.remove('nav-alert-collision'), 4000);
+  }
+
+  speakNavInstruction(`¡Atención! Colisión detectada contra ${building.name}. Vehículo detenido.`);
+  showNotification(`💥 COLISIÓN: ${veh.name} impactó contra ${building.name}`, 'danger');
 }
 
 function triggerRouteAlert(veh, currentDist, maxTolerance) {
@@ -1995,8 +2155,8 @@ function triggerRouteAlert(veh, currentDist, maxTolerance) {
 
   const alertData = {
     severity: 'CRÍTICA',
-    title: `¡DESVÍO DE RUTA DETECTADO!`,
-    msg: `${veh.name} (${veh.plate}) se ha apartado ${Math.round(currentDist)}m del corredor autorizado (Máx: ${maxTolerance}m).`,
+    title: `⚠️ ¡DESVÍO DE CALLE AUTORIZADA!`,
+    msg: `${veh.name} (${veh.plate}) se ha apartado ${Math.round(currentDist)}m del corredor vial autorizado (Máx: ${maxTolerance}m).`,
     time: new Date().toLocaleTimeString(),
     vehicleId: veh.id
   };
@@ -2007,7 +2167,10 @@ function triggerRouteAlert(veh, currentDist, maxTolerance) {
   // If this is currently selected vehicle, flash camera warning banner
   if (veh.id === state.selectedVehicleId) {
     const camAlertBanner = document.getElementById('cam-alert-banner');
-    if (camAlertBanner) camAlertBanner.classList.add('active');
+    if (camAlertBanner) {
+      camAlertBanner.classList.add('active');
+      camAlertBanner.innerText = `⚠️ DESVÍO DE CALLE DETECTADO (+${Math.round(currentDist)}m)`;
+    }
   }
 }
 
@@ -2063,6 +2226,14 @@ function updateSimulationStep() {
   const route = state.routes[currentVeh.routeId];
   if (!route || route.path.length < 2) return;
 
+  // If vehicle has crashed into a building, it stops completely!
+  if (currentVeh.status === 'crashed') {
+    currentVeh.speed = 0;
+    renderVehicleMarkers();
+    updateTelemetryDisplay(currentVeh);
+    return;
+  }
+
   // Advance index along polyline
   if (!currentVeh.isDeviatedManually) {
     currentVeh.simIndex += 0.003 * state.simSpeedMultiplier;
@@ -2086,14 +2257,14 @@ function updateSimulationStep() {
     currentVeh.heading = Math.round(angleDeg);
     currentVeh.speed = Math.round(48 + Math.sin(currentVeh.simIndex * 10) * 8);
   } else {
-    // Vehicle is deviated: speed up slightly, moving sideways out of corridor
-    currentVeh.lat += 0.00008;
-    currentVeh.lng += 0.00015;
-    currentVeh.speed = 64;
-    currentVeh.heading = 75;
+    // Vehicle is deviated: steers off the roadway onto sidewalk toward buildings
+    currentVeh.lat += 0.00012;
+    currentVeh.lng += 0.00016;
+    currentVeh.speed = 52;
+    currentVeh.heading = 55;
   }
 
-  // Check deviation
+  // Check collision & compliance
   verifyRouteCompliance(currentVeh);
 
   // Update UI components
@@ -2159,10 +2330,20 @@ function updateTelemetryDisplay(veh) {
   }
 
   if (routeStatusEl) {
-    if (veh.status === 'deviated') {
+    if (veh.status === 'crashed') {
       routeStatusEl.className = 't-value text-red';
-      routeStatusEl.innerHTML = `DESVIADO (+${veh.deviationDistance}m)`;
-      if (camAlertBanner) camAlertBanner.classList.add('active');
+      routeStatusEl.innerHTML = `🚨 COLISIÓN (IMPACTO EDIFICIO)`;
+      if (camAlertBanner) {
+        camAlertBanner.classList.add('active');
+        camAlertBanner.innerText = `🚨 COLISIÓN CON EDIFICIO DETECTADA (0 km/h)`;
+      }
+    } else if (veh.status === 'deviated') {
+      routeStatusEl.className = 't-value text-red';
+      routeStatusEl.innerHTML = `⚠️ DESVIADO (+${veh.deviationDistance}m)`;
+      if (camAlertBanner) {
+        camAlertBanner.classList.add('active');
+        camAlertBanner.innerText = `⚠️ DESVÍO DE CALLE AUTORIZADA`;
+      }
     } else {
       routeStatusEl.className = 't-value text-green';
       routeStatusEl.innerHTML = `EN RUTA (${veh.deviationDistance}m)`;
@@ -2176,8 +2357,15 @@ function updateTelemetryDisplay(veh) {
   // Update Left Sidebar vehicle card status
   const card = document.getElementById(`v-card-${veh.id}`);
   if (card) {
-    if (veh.status === 'deviated') card.classList.add('deviated');
-    else card.classList.remove('deviated');
+    if (veh.status === 'crashed') {
+      card.classList.add('deviated');
+      card.classList.add('crashed');
+    } else if (veh.status === 'deviated') {
+      card.classList.add('deviated');
+      card.classList.remove('crashed');
+    } else {
+      card.classList.remove('deviated', 'crashed');
+    }
   }
 }
 
@@ -3572,6 +3760,9 @@ window.addEventListener('DOMContentLoaded', () => {
   renderVehicleList();
   renderDeviceChips();
   renderAlertsList();
+
+  // Guarantee page starts directly at street level in 3D perspective mode (no globe blocking)
+  transitionToSurface2D([-34.5770, -58.4005], 14, GLOBAL_COUNTRIES.ARG);
 
   // Run simulation tick at 25 FPS (40ms)
   setInterval(updateSimulationStep, 40);
