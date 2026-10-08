@@ -405,14 +405,71 @@
         <!-- 3D Planet Earth WebGL Container (Global View) -->
         <div id="globe-3d-container"></div>
 
-        <!-- 3D Globe Mode Interactive Floating Overlay -->
+        <!-- 3D Globe Mode Interactive Floating Overlay (Estilo SatelliteMap.space) -->
         <div class="globe-hud-overlay" id="globe-hud-overlay">
-          <div class="globe-hud-badge">
-            <span class="pulsing-orbit-dot"></span>
-            <span><b>ÓRBITA SATELITAL 3D:</b> Planeta Tierra &bull; Haz clic en CUALQUIER país para entrar</span>
+          <!-- SatelliteMap.space Constellation Swarm Telemetry HUD Card -->
+          <div class="satellitemap-space-hud" id="satellitemap-hud">
+            <div class="sat-hud-header">
+              <div class="sat-hud-title">
+                <i class="fa-solid fa-satellite text-cyan pulse-icon"></i>
+                <div>
+                  <span class="sat-brand">SATELLITEMAP.SPACE // ORBITAL SWARM</span>
+                  <span class="sat-sub">ENJAMBRE STARLINK &amp; GPS LEO/MEO EN TIEMPO REAL</span>
+                </div>
+              </div>
+              <span class="sat-live-indicator"><span class="sat-pulse-dot"></span> EN ÓRBITA</span>
+            </div>
+
+            <div class="sat-hud-metrics-grid">
+              <div class="sat-metric-box">
+                <span class="sm-label">SATÉLITES ACTIVOS</span>
+                <span class="sm-val text-cyan" id="sat-stat-count">6,428 EN LÍNEA</span>
+              </div>
+              <div class="sat-metric-box">
+                <span class="sm-label">ÓRBITA LEO</span>
+                <span class="sm-val text-green" id="sat-stat-alt">548.2 KM</span>
+              </div>
+              <div class="sat-metric-box">
+                <span class="sm-label">VEL. ORBITAL</span>
+                <span class="sm-val font-mono" id="sat-stat-vel">27,360 KM/H (7.6 km/s)</span>
+              </div>
+              <div class="sat-metric-box">
+                <span class="sm-label">PERÍODO ORBITAL</span>
+                <span class="sm-val" id="sat-stat-period">95.4 MIN</span>
+              </div>
+            </div>
+
+            <!-- Realtime Satellite Inspector Card -->
+            <div class="sat-inspect-card" id="sat-inspect-card">
+              <div class="sat-inspect-header">
+                <span class="sat-target-id"><i class="fa-solid fa-crosshairs text-cyan"></i> <b id="inspect-sat-id">STARLINK-3142</b></span>
+                <span class="sat-constellation-badge" id="inspect-sat-constellation">SHELL 1 (53.0°)</span>
+              </div>
+              <div class="sat-inspect-details">
+                <div><span>Uplink Mini:</span> <b class="text-green" id="inspect-sat-uplink">240 Mbps / 18ms</b></div>
+                <div><span>Gateway Activo:</span> <b id="inspect-sat-gw">Estación Buenos Aires / Lima</b></div>
+              </div>
+            </div>
+
+            <!-- Swarm Filter and Layer Switches -->
+            <div class="sat-hud-actions">
+              <div class="sat-filter-buttons">
+                <button class="sat-btn-filter active" id="btn-sat-filter-all">TODOS</button>
+                <button class="sat-btn-filter" id="btn-sat-filter-starlink">STARLINK</button>
+                <button class="sat-btn-filter" id="btn-sat-filter-gps">GPS / GNSS</button>
+              </div>
+              <div class="sat-toggle-switches">
+                <button class="sat-tool-btn active" id="btn-toggle-sat-orbits" title="Mostrar/Ocultar Anillos de Trayectoria Orbital">
+                  <i class="fa-solid fa-circle-notch text-cyan"></i> ÓRBITAS
+                </button>
+                <button class="sat-tool-btn active" id="btn-toggle-sat-lasers" title="Mostrar/Ocultar Enlaces Láser Terrestres y Satélite">
+                  <i class="fa-solid fa-bolt text-green"></i> LÁSERES
+                </button>
+              </div>
+            </div>
           </div>
 
-          <!-- Quick Country Selector & Descend Button -->
+          <!-- Quick Country Selector & Descend to Google Maps Planar 3D Button -->
           <div class="globe-country-dock">
             <div class="globe-country-label">
               <i class="fa-solid fa-earth-americas text-cyan"></i> <span>IR A PAÍS:</span>
@@ -435,8 +492,8 @@
               <option value="CAN">🇨🇦 Canadá (Toronto / Montreal)</option>
               <option value="AUS">🇦🇺 Australia (Sídney)</option>
             </select>
-            <button class="btn-enter-surface" id="btn-descend-to-surface">
-              <i class="fa-solid fa-plane-arrival"></i> <span>ENTRAR AL PAÍS (MODO PLANO 2D)</span>
+            <button class="btn-enter-surface" id="btn-descend-to-surface" title="Bajar al mapa 3D plano estilo nueva versión de Google Maps">
+              <i class="fa-solid fa-map-location-dot"></i> <span>MAPA PLANO 3D (GOOGLE MAPS)</span>
             </button>
             <button class="btn-globe-style-toggle" id="btn-toggle-globe-style" title="Alternar Textura 3D del Planeta: Oscuro Gris Táctico / Satelital HD">
               <i class="fa-solid fa-satellite text-cyan"></i> <span id="globe-style-btn-text">3D OSCURO GRIS</span>
@@ -445,7 +502,7 @@
 
           <div class="globe-click-hint">
             <i class="fa-solid fa-arrow-pointer text-cyan"></i>
-            <span>O <b>haz clic directamente en cualquier parte del planeta</b> para descender allí</span>
+            <span>Haz clic en cualquier satélite para telemetría o <b>doble clic en el planeta</b> para descender al mapa plano 3D</span>
           </div>
         </div>
 
@@ -509,6 +566,9 @@
               </button>
               <button class="map-btn btn-buildings-3d active" id="btn-toggle-3d-buildings" title="Activar/Desactivar Edificios 3D Volumétricos en Calles (Estilo Google Maps 3D)">
                 <i class="fa-solid fa-city text-cyan"></i> <span>EDIFICIOS 3D</span>
+              </button>
+              <button class="map-btn btn-bridges-3d active" id="btn-toggle-3d-bridges" title="Activar/Desactivar Puentes y Viaductos 3D (Estilo Google Maps 3D)">
+                <i class="fa-solid fa-archway text-cyan"></i> <span>PUENTES 3D</span>
               </button>
               <button class="map-btn" id="btn-recenter" title="Re-centrar en el vehículo">
                 <i class="fa-solid fa-crosshairs"></i>
@@ -991,6 +1051,67 @@
         <span class="dest-note"><i class="fa-solid fa-circle-info text-cyan"></i> La navegación inmersiva 3D guía al vehículo directo al carril de ingreso autorizado.</span>
         <button class="btn-tactical btn-primary" id="btn-dest-ack">
           <i class="fa-solid fa-check"></i> ENTENDIDO
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Inspección 3D de Puentes y Viaductos (Estilo Google Maps 3D) -->
+  <div class="modal-overlay" id="bridge-preview-modal">
+    <div class="modal-card bridge-preview-card">
+      <div class="modal-header">
+        <div class="bridge-card-title">
+          <i class="fa-solid fa-archway text-cyan"></i>
+          <div>
+            <h3 id="bridge-modal-name">PUENTE ELEVADO &bull; INSPECCIÓN ESTRUCTURAL 3D</h3>
+            <p class="subtitle" id="bridge-modal-subtitle">Gálibo Vial, Capacidad de Carga y Detección de Colisiones</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btn-close-bridge-preview">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="bridge-visual-box">
+          <div class="bridge-hologram-grid"></div>
+          <div class="bridge-deck-graphic">
+            <div class="bridge-pillar left"></div>
+            <div class="bridge-span-road">
+              <div class="bridge-road-lane"></div>
+              <div class="bridge-veh-silhouette"><i class="fa-solid fa-truck-shield"></i></div>
+            </div>
+            <div class="bridge-pillar right"></div>
+            <div class="bridge-clearance-arrow">
+              <span>GÁLIBO: <b id="bridge-graphic-clearance">4.80 m</b></span>
+            </div>
+          </div>
+          <div class="bridge-badge-corner" id="bridge-type-badge">VIADUCTO REFORZADO CLASE A</div>
+          <div class="bridge-status-indicator"><span class="bridge-pulse-dot"></span> VÍA HABILITADA</div>
+        </div>
+
+        <div class="bridge-info-grid">
+          <div class="bridge-info-item">
+            <span class="b-label">ESTRUCTURA VIAL:</span>
+            <span class="b-val text-cyan" id="bridge-info-name">Puente Elevado Javier Prado</span>
+          </div>
+          <div class="bridge-info-item">
+            <span class="b-label">GÁLIBO VERTICAL (ALTURA LIBRE):</span>
+            <span class="b-val text-green" id="bridge-info-clearance">4.80 m (Apto para Rhino: 2.45m)</span>
+          </div>
+          <div class="bridge-info-item">
+            <span class="b-label">CAPACIDAD MÁXIMA DE CARGA:</span>
+            <span class="b-val text-cyan" id="bridge-info-load">45 Toneladas (Blindado: 4.8T)</span>
+          </div>
+          <div class="bridge-info-item">
+            <span class="b-label">CÁMARAS DE TRÁNSITO:</span>
+            <span class="b-val text-green" id="bridge-info-cctv"><i class="fa-solid fa-video"></i> ENLACE CCTV VIAL ACTIVO</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer bridge-card-footer">
+        <span class="bridge-note"><i class="fa-solid fa-shield-halved text-green"></i> Paso seguro garantizado: Altura y peso del convoy verificados dentro del rango de tolerancia.</span>
+        <button class="btn-tactical btn-primary" id="btn-bridge-ack">
+          <i class="fa-solid fa-check"></i> CONFIRMAR CRUCE SEGURO
         </button>
       </div>
     </div>

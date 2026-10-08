@@ -3775,3 +3775,690 @@ body.light-theme .btn-secondary {
   align-items: center;
   gap: 6px;
 }
+
+/* =====================================================================
+   SATELLITEMAP.SPACE // 3D GLOBE ORBITAL SWARM HUD AESTHETICS
+   ===================================================================== */
+.satellitemap-space-hud {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  max-width: 480px;
+  width: calc(100% - 40px);
+  background: rgba(3, 7, 18, 0.92);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 240, 255, 0.2);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+  transition: all 0.3s ease;
+}
+
+.sat-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+  padding-bottom: 8px;
+}
+
+.sat-hud-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sat-brand {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #00f0ff;
+  letter-spacing: 0.8px;
+  display: block;
+}
+
+.sat-sub {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  display: block;
+}
+
+.sat-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 255, 163, 0.15);
+  border: 1px solid rgba(0, 255, 163, 0.5);
+  color: #00ffa3;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.sat-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00ffa3;
+  box-shadow: 0 0 8px #00ffa3;
+  animation: pulseGreen 1.4s infinite;
+}
+
+.sat-hud-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.sat-metric-box {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sat-metric-box .sm-label {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.sat-metric-box .sm-val {
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.sat-inspect-card {
+  background: rgba(8, 16, 32, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sat-inspect-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sat-target-id {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sat-constellation-badge {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  background: rgba(0, 240, 255, 0.15);
+  color: #00f0ff;
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.sat-inspect-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.sat-hud-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sat-filter-buttons,
+.sat-toggle-switches {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sat-btn-filter {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sat-btn-filter:hover {
+  color: #fff;
+  border-color: rgba(0, 240, 255, 0.4);
+}
+
+.sat-btn-filter.active {
+  background: rgba(0, 240, 255, 0.2);
+  border-color: #00f0ff;
+  color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+.sat-tool-btn {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.sat-tool-btn.active {
+  border-color: rgba(0, 240, 255, 0.5);
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.1);
+}
+
+/* =====================================================================
+   GOOGLE MAPS 3D // PUENTES, EDIFICIOS Y CALLES
+   ===================================================================== */
+
+/* 1. Puentes y Viaductos 3D */
+.btn-bridges-3d.active {
+  background: rgba(0, 240, 255, 0.2) !important;
+  border-color: #00f0ff !important;
+  color: #00f0ff !important;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4) !important;
+}
+
+.bridge-3d-structure-wrap {
+  position: absolute;
+  transform-style: preserve-3d;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.bridge-3d-model {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.25s ease;
+}
+
+.bridge-3d-model:hover {
+  filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.8));
+}
+
+.bridge-deck {
+  position: absolute;
+  background: linear-gradient(to right, #1e293b 0%, #334155 50%, #1e293b 100%);
+  border-top: 2px solid #00f0ff;
+  border-bottom: 2px solid #00f0ff;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 240, 255, 0.4);
+  transform: translateZ(22px);
+  box-sizing: border-box;
+}
+
+.bridge-lane-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, #fff 0px, #fff 10px, transparent 10px, transparent 18px);
+  transform: translateY(-50%);
+  opacity: 0.85;
+}
+
+.bridge-pylon-pillar {
+  position: absolute;
+  width: 8px;
+  height: 38px;
+  background: linear-gradient(to top, #090e1a 0%, #00f0ff 100%);
+  border: 1px solid #00f0ff;
+  bottom: 0;
+}
+
+.bridge-pylon-pillar.left { left: 4px; }
+.bridge-pylon-pillar.right { right: 4px; }
+
+.bridge-cable {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 24px;
+  background: rgba(0, 240, 255, 0.7);
+  box-shadow: 0 0 6px #00f0ff;
+}
+
+.bridge-clearance-pill {
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%) translateZ(35px);
+  white-space: nowrap;
+  background: rgba(5, 10, 22, 0.94);
+  border: 1.5px solid #00f0ff;
+  border-radius: 20px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6), 0 0 12px rgba(0, 240, 255, 0.5);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  z-index: 500;
+  pointer-events: auto;
+}
+
+.bridge-clearance-pill .b-tag {
+  color: #00f0ff;
+}
+
+.bridge-clearance-pill .b-galibo {
+  color: #00ffa3;
+  background: rgba(0, 255, 163, 0.15);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* 2. Google Maps 3D Light Mode for Bridges */
+body.light-theme .bridge-deck {
+  background: linear-gradient(to right, #cbd5e1 0%, #f1f5f9 50%, #cbd5e1 100%) !important;
+  border-top: 2px solid #0284c7 !important;
+  border-bottom: 2px solid #0284c7 !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18) !important;
+}
+
+body.light-theme .bridge-pylon-pillar {
+  background: linear-gradient(to top, #94a3b8 0%, #0284c7 100%) !important;
+  border-color: #0284c7 !important;
+}
+
+body.light-theme .bridge-clearance-pill {
+  background: #ffffff !important;
+  border: 1.5px solid #0284c7 !important;
+  color: #0f172a !important;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15) !important;
+}
+
+body.light-theme .bridge-clearance-pill .b-tag {
+  color: #0284c7 !important;
+}
+
+body.light-theme .bridge-clearance-pill .b-galibo {
+  color: #166534 !important;
+  background: #dcfce7 !important;
+}
+
+/* 3. Google Maps 3D Light Mode for Buildings */
+body.light-theme .building-3d-prism .prism-wall {
+  background: linear-gradient(to top, #e2e8f0 0%, #ffffff 100%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.7) !important;
+  background-image: radial-gradient(rgba(100, 116, 139, 0.45) 1px, transparent 1px) !important;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08) !important;
+}
+
+body.light-theme .building-3d-prism .prism-roof {
+  background: #f8fafc !important;
+  border: 1.5px solid #94a3b8 !important;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light-theme .building-landmark-dest .prism-wall {
+  background: linear-gradient(to top, #e2e8f0 0%, #ffffff 100%) !important;
+  border-color: #0284c7 !important;
+}
+
+body.light-theme .building-landmark-dest .prism-roof {
+  background: #f8fafc !important;
+  border-color: #0284c7 !important;
+}
+
+body.light-theme .landmark-roof-pad {
+  border-color: #0284c7 !important;
+  color: #0284c7 !important;
+  background: rgba(2, 132, 199, 0.12) !important;
+  box-shadow: 0 0 15px rgba(2, 132, 199, 0.3) !important;
+}
+
+/* 4. Google Maps 3D Calles / Street Banners */
+.street-3d-badge-wrap {
+  position: absolute;
+  pointer-events: none;
+  z-index: 450;
+  transform-style: preserve-3d;
+}
+
+.street-3d-badge {
+  white-space: nowrap;
+  background: rgba(8, 16, 32, 0.92);
+  border: 1px solid rgba(0, 240, 255, 0.45);
+  border-radius: 16px;
+  padding: 3px 10px;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 10px rgba(0, 240, 255, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.street-3d-badge i {
+  color: #00f0ff;
+  font-size: 0.75rem;
+}
+
+body.light-theme .street-3d-badge {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+}
+
+body.light-theme .street-3d-badge i {
+  color: #0284c7 !important;
+}
+
+/* 5. Bridge Preview Modal */
+.bridge-preview-card {
+  max-width: 580px;
+  width: 95%;
+  background: rgba(10, 16, 30, 0.96) !important;
+  border: 1px solid #00f0ff !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 25px rgba(0, 240, 255, 0.35) !important;
+}
+
+.bridge-visual-box {
+  height: 190px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #040915 0%, #0d1e38 100%);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.bridge-hologram-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.08) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.bridge-deck-graphic {
+  position: relative;
+  width: 80%;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bridge-span-road {
+  width: 100%;
+  height: 24px;
+  background: #1e293b;
+  border-top: 2px solid #00f0ff;
+  border-bottom: 2px solid #00f0ff;
+  border-radius: 4px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bridge-road-lane {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, #fff 0px, #fff 8px, transparent 8px, transparent 16px);
+  transform: translateY(-50%);
+}
+
+.bridge-veh-silhouette {
+  color: #00ffa3;
+  font-size: 1.2rem;
+  z-index: 2;
+  filter: drop-shadow(0 0 8px #00ffa3);
+}
+
+.bridge-pillar {
+  width: 14px;
+  height: 60px;
+  background: linear-gradient(to top, #0f172a 0%, #00f0ff 100%);
+  border: 1px solid #00f0ff;
+  position: absolute;
+  bottom: 0;
+}
+
+.bridge-pillar.left { left: 0; }
+.bridge-pillar.right { right: 0; }
+
+.bridge-clearance-arrow {
+  position: absolute;
+  bottom: -24px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #00ffa3;
+  background: rgba(0, 255, 163, 0.15);
+  border: 1px solid rgba(0, 255, 163, 0.5);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.bridge-badge-corner {
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
+  background: rgba(3, 7, 18, 0.85);
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.bridge-status-indicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 255, 163, 0.15);
+  border: 1px solid rgba(0, 255, 163, 0.5);
+  color: #00ffa3;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.bridge-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00ffa3;
+  box-shadow: 0 0 8px #00ffa3;
+  animation: pulseGreen 1.5s infinite;
+}
+
+.bridge-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.bridge-info-item {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bridge-info-item .b-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.bridge-info-item .b-val {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.bridge-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.bridge-note {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+body.light-theme .bridge-preview-card {
+  background: #ffffff !important;
+  border-color: #0284c7 !important;
+  color: #0f172a !important;
+  box-shadow: 0 25px 50px rgba(15, 23, 42, 0.25) !important;
+}
+
+body.light-theme .bridge-visual-box {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light-theme .bridge-info-item {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light-theme .bridge-info-item .b-label {
+  color: #475569 !important;
+}
+
+body.light-theme .bridge-info-item .b-val {
+  color: #0f172a !important;
+}
+
+body.light-theme .bridge-badge-corner {
+  background: #ffffff !important;
+  color: #0284c7 !important;
+  border-color: #0284c7 !important;
+}
+
+body.light-theme .bridge-note {
+  color: #475569 !important;
+}
+
+/* Light Theme SatelliteMap.space HUD */
+body.light-theme .satellitemap-space-hud {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.15) !important;
+}
+
+body.light-theme .sat-brand {
+  color: #0284c7 !important;
+}
+
+body.light-theme .sat-sub {
+  color: #64748b !important;
+}
+
+body.light-theme .sat-metric-box {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light-theme .sat-metric-box .sm-label {
+  color: #475569 !important;
+}
+
+body.light-theme .sat-inspect-card {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light-theme .sat-target-id {
+  color: #0f172a !important;
+}
+
+body.light-theme .sat-btn-filter {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+body.light-theme .sat-btn-filter.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+}
+
+body.light-theme .sat-tool-btn {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light-theme .sat-tool-btn.active {
+  background: rgba(2, 132, 199, 0.12) !important;
+  border-color: #0284c7 !important;
+  color: #0284c7 !important;
+}
+

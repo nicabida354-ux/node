@@ -115,6 +115,9 @@ const state = {
   currentViewMode: 'surface-2d', // Default to 2D/3D street map so user sees the real map immediately
   show3DBuildings: true,
   activeBuildings: [], // Array of active 3D building collision bounds
+  show3DBridges: true,
+  activeBridges: [], // Array of active 3D bridge structures
+  show3DStreets: true,
   inmersiveNav3D: false,
   navVoiceEnabled: true,
   lastSpokenManeuver: '',
@@ -477,6 +480,16 @@ const Globe3D = {
   beaconGroup: null,
   beaconRing: null,
   laserLine: null,
+  satellites: [],
+  satelliteSwarmGroup: null,
+  orbitLinesGroup: null,
+  laserLinksGroup: null,
+  laserLines: [],
+  groundGateways: [],
+  satFilter: 'all',
+  showOrbits: true,
+  showLasers: true,
+  selectedSat: null,
   animId: null,
   isDescending: false,
   isInitialized: false,
@@ -680,38 +693,9 @@ const Globe3D = {
 
     this.scene.add(this.beaconGroup);
 
-    // 8. Orbiting Satellite & Trajectory Ring
-    this.satelliteGroup = new THREE.Group();
-    const satOrbitRadius = 7.4;
-    const orbitGeo = new THREE.BufferGeometry();
-    const orbitPts = [];
-    for (let i = 0; i <= 64; i++) {
-      const a = (i / 64) * Math.PI * 2;
-      orbitPts.push(new THREE.Vector3(Math.cos(a) * satOrbitRadius, Math.sin(a) * 2.8, Math.sin(a) * satOrbitRadius * 0.9));
-    }
-    orbitGeo.setFromPoints(orbitPts);
-    const orbitMat = new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.25 });
-    this.scene.add(new THREE.LineLoop(orbitGeo, orbitMat));
-
-    // Satellite Body
-    const satBodyGeo = new THREE.BoxGeometry(0.12, 0.12, 0.18);
-    const satBodyMat = new THREE.MeshPhongMaterial({ color: 0xe2e8f0 });
-    const satBody = new THREE.Mesh(satBodyGeo, satBodyMat);
-    this.satelliteGroup.add(satBody);
-
-    // Solar Panels
-    const wingGeo = new THREE.BoxGeometry(0.48, 0.02, 0.14);
-    const wingMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-    const wingMesh = new THREE.Mesh(wingGeo, wingMat);
-    this.satelliteGroup.add(wingMesh);
-    this.scene.add(this.satelliteGroup);
-
-    // Telemetry Laser Beam connecting Satellite to Earth
-    const initialPos = latLngToVector3(ARGENTINA_COORDS.lat, ARGENTINA_COORDS.lng, 5.0);
-    const laserGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), initialPos]);
-    const laserMat = new THREE.LineBasicMaterial({ color: 0x00ffa3, transparent: true, opacity: 0.6 });
-    this.laserLine = new THREE.Line(laserGeo, laserMat);
-    this.scene.add(this.laserLine);
+    // 8. Orbiting Satellite Constellation Swarms (Estilo SatelliteMap.space)
+    this.initSatelliteSwarm();
+    this.initSatelliteSwarmEvents();
 
     // 9. Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
@@ -720,7 +704,7 @@ const Globe3D = {
     sunLight.position.set(12, 8, 10);
     this.scene.add(sunLight);
 
-    // 10. Click Raycaster to descend directly into ANY clicked country on the 3D globe!
+    // 10. Click Raycaster for Satellites and Earth Descent
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     let downX = 0, downY = 0;
@@ -739,6 +723,23 @@ const Globe3D = {
         mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
         raycaster.setFromCamera(mouse, this.camera);
+
+        // A. Check if clicked directly on an orbiting satellite
+        if (this.satelliteSwarmGroup) {
+          const satHits = raycaster.intersectObjects(this.satelliteSwarmGroup.children, true);
+          if (satHits.length > 0) {
+            let hitObj = satHits[0].object;
+            while (hitObj.parent && hitObj.parent !== this.satelliteSwarmGroup) {
+              hitObj = hitObj.parent;
+            }
+            if (hitObj && hitObj.userData && hitObj.userData.id) {
+              this.selectSatellite(hitObj.userData);
+              return;
+            }
+          }
+        }
+
+        // B. Otherwise check if clicked on Earth to descend
         const hits = raycaster.intersectObject(this.earthMesh);
         if (hits.length > 0) {
           const pt = hits[0].point;
@@ -835,25 +836,363 @@ const Globe3D = {
       });
     }
 
-    // Orbit satellite
-    if (this.satelliteGroup) {
-      const satRadius = 7.4;
-      const angle = time * 0.35;
-      const satX = Math.cos(angle) * satRadius;
-      const satY = Math.sin(angle) * 2.8;
-      const satZ = Math.sin(angle) * satRadius * 0.9;
-      this.satelliteGroup.position.set(satX, satY, satZ);
-      this.satelliteGroup.lookAt(0, 0, 0);
+    // Orbit and update satellite swarm positions (Estilo SatelliteMap.space)
+    if (this.satellites && this.satellites.length > 0) {
+      this.satellites.forEach(s => {
+        const curTheta = s.theta + time * s.speed;
+        const x = s.radius * (Math.cos(s.raan) * Math.cos(curTheta) - Math.sin(s.raan) * Math.sin(curTheta) * Math.cos(s.inc));
+        const y = s.radius * (Math.sin(curTheta) * Math.sin(s.inc));
+        const z = s.radius * (Math.sin(s.raan) * Math.cos(curTheta) + Math.cos(s.raan) * Math.sin(curTheta) * Math.cos(s.inc));
+        s.mesh.position.set(x, y, z);
+        s.mesh.lookAt(0, 0, 0);
+      });
+    }
 
-      // Update laser beam targeting active country
-      if (this.laserLine) {
-        const curCountry = GLOBAL_COUNTRIES[state.selectedCountryCode] || GLOBAL_COUNTRIES.ARG;
-        const targetPos = latLngToVector3(curCountry.lat, curCountry.lng, 5.0);
-        this.laserLine.geometry.setFromPoints([new THREE.Vector3(satX, satY, satZ), targetPos]);
-      }
+    // Dynamic ground-to-space laser uplinks (Starlink Gateway Uplinks)
+    if (this.laserLines && this.laserLines.length > 0 && this.showLasers) {
+      const pulseOpacity = 0.5 + 0.45 * Math.sin(time * 5.0);
+      this.laserLines.forEach(l => {
+        l.material.opacity = pulseOpacity;
+        const gwPos = l.userData.gwPos;
+        let bestSat = null;
+        let minD = 999;
+        this.satellites.forEach(s => {
+          if (s.type === 'starlink' && s.mesh.visible) {
+            const d = s.mesh.position.distanceTo(gwPos);
+            if (d < minD) {
+              minD = d;
+              bestSat = s;
+            }
+          }
+        });
+        if (bestSat && minD < 4.5) {
+          l.geometry.setFromPoints([gwPos, bestSat.mesh.position]);
+          l.visible = true;
+        } else {
+          l.visible = false;
+        }
+      });
     }
 
     this.renderer.render(this.scene, this.camera);
+  },
+
+  initSatelliteSwarm() {
+    this.satellites = [];
+    this.satelliteSwarmGroup = new THREE.Group();
+    this.orbitLinesGroup = new THREE.Group();
+    this.laserLinksGroup = new THREE.Group();
+    this.laserLines = [];
+
+    // 1. Starlink Shell 1 (LEO 548 km, 53° inclination)
+    const starlinkPlanes = 8;
+    const satsPerPlane = 5;
+    const inc53 = 53 * (Math.PI / 180);
+    const rStarlink = 5.48;
+
+    for (let p = 0; p < starlinkPlanes; p++) {
+      const raan = (p / starlinkPlanes) * Math.PI * 2;
+
+      // Trajectory ring
+      const ringPts = [];
+      for (let i = 0; i <= 64; i++) {
+        const th = (i / 64) * Math.PI * 2;
+        const x = rStarlink * (Math.cos(raan) * Math.cos(th) - Math.sin(raan) * Math.sin(th) * Math.cos(inc53));
+        const y = rStarlink * (Math.sin(th) * Math.sin(inc53));
+        const z = rStarlink * (Math.sin(raan) * Math.cos(th) + Math.cos(raan) * Math.sin(th) * Math.cos(inc53));
+        ringPts.push(new THREE.Vector3(x, y, z));
+      }
+      const ringGeo = new THREE.BufferGeometry().setFromPoints(ringPts);
+      const ringMat = new THREE.LineBasicMaterial({
+        color: 0x00f0ff,
+        transparent: true,
+        opacity: 0.20
+      });
+      const ringLine = new THREE.LineLoop(ringGeo, ringMat);
+      ringLine.userData = { constellation: 'starlink' };
+      this.orbitLinesGroup.add(ringLine);
+
+      for (let s = 0; s < satsPerPlane; s++) {
+        const satIdNum = 1100 + p * 80 + s * 14;
+        const initialTheta = (s / satsPerPlane) * Math.PI * 2 + (p * 0.42);
+
+        const satObj = new THREE.Group();
+        const coreGeo = new THREE.SphereGeometry(0.048, 8, 8);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+        satObj.add(new THREE.Mesh(coreGeo, coreMat));
+
+        const panelGeo = new THREE.BoxGeometry(0.18, 0.012, 0.045);
+        const panelMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+        satObj.add(new THREE.Mesh(panelGeo, panelMat));
+
+        satObj.userData = {
+          id: `STARLINK-${satIdNum}`,
+          constellation: 'starlink',
+          shell: 'SHELL 1 (53.0° LEO)',
+          alt: '548.2 km',
+          vel: '27,360 km/h (7.6 km/s)',
+          period: '95.4 min',
+          status: 'OPERACIONAL',
+          uplink: '240 Mbps / 18ms',
+          gateway: 'Estación Terrena Buenos Aires / Lima'
+        };
+
+        this.satelliteSwarmGroup.add(satObj);
+        this.satellites.push({
+          mesh: satObj,
+          type: 'starlink',
+          radius: rStarlink,
+          inc: inc53,
+          raan: raan,
+          theta: initialTheta,
+          speed: 0.22 + (p % 3) * 0.015
+        });
+      }
+    }
+
+    // 2. Starlink Polar Shell (LEO 560 km, 70° inclination)
+    const polarPlanes = 3;
+    const polarSatsPerPlane = 4;
+    const inc70 = 70 * (Math.PI / 180);
+    const rPolar = 5.52;
+
+    for (let p = 0; p < polarPlanes; p++) {
+      const raan = (p / polarPlanes) * Math.PI * 2 + Math.PI / 6;
+
+      const ringPts = [];
+      for (let i = 0; i <= 64; i++) {
+        const th = (i / 64) * Math.PI * 2;
+        const x = rPolar * (Math.cos(raan) * Math.cos(th) - Math.sin(raan) * Math.sin(th) * Math.cos(inc70));
+        const y = rPolar * (Math.sin(th) * Math.sin(inc70));
+        const z = rPolar * (Math.sin(raan) * Math.cos(th) + Math.cos(raan) * Math.sin(th) * Math.cos(inc70));
+        ringPts.push(new THREE.Vector3(x, y, z));
+      }
+      const ringGeo = new THREE.BufferGeometry().setFromPoints(ringPts);
+      const ringMat = new THREE.LineBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.25
+      });
+      const ringLine = new THREE.LineLoop(ringGeo, ringMat);
+      ringLine.userData = { constellation: 'starlink' };
+      this.orbitLinesGroup.add(ringLine);
+
+      for (let s = 0; s < polarSatsPerPlane; s++) {
+        const satIdNum = 3200 + p * 60 + s * 19;
+        const initialTheta = (s / polarSatsPerPlane) * Math.PI * 2 + (p * 0.5);
+
+        const satObj = new THREE.Group();
+        const coreGeo = new THREE.SphereGeometry(0.048, 8, 8);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+        satObj.add(new THREE.Mesh(coreGeo, coreMat));
+
+        const panelGeo = new THREE.BoxGeometry(0.18, 0.012, 0.045);
+        const panelMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+        satObj.add(new THREE.Mesh(panelGeo, panelMat));
+
+        satObj.userData = {
+          id: `STARLINK-POLAR-${satIdNum}`,
+          constellation: 'starlink',
+          shell: 'POLAR SHELL (70.0° LEO)',
+          alt: '560.4 km',
+          vel: '27,310 km/h (7.59 km/s)',
+          period: '95.8 min',
+          status: 'OPERACIONAL',
+          uplink: '220 Mbps / 21ms',
+          gateway: 'Enlace Óptico Láser Inter-Satélite (ISL)'
+        };
+
+        this.satelliteSwarmGroup.add(satObj);
+        this.satellites.push({
+          mesh: satObj,
+          type: 'starlink',
+          radius: rPolar,
+          inc: inc70,
+          raan: raan,
+          theta: initialTheta,
+          speed: 0.20 + (p % 2) * 0.02
+        });
+      }
+    }
+
+    // 3. GPS / GNSS Navstar Constellation (MEO 20,200 km, 55° inclination -> r = 7.1)
+    const gpsPlanes = 3;
+    const gpsSatsPerPlane = 3;
+    const inc55 = 55 * (Math.PI / 180);
+    const rGPS = 7.1;
+
+    for (let p = 0; p < gpsPlanes; p++) {
+      const raan = (p / gpsPlanes) * Math.PI * 2 + Math.PI / 4;
+
+      const ringPts = [];
+      for (let i = 0; i <= 64; i++) {
+        const th = (i / 64) * Math.PI * 2;
+        const x = rGPS * (Math.cos(raan) * Math.cos(th) - Math.sin(raan) * Math.sin(th) * Math.cos(inc55));
+        const y = rGPS * (Math.sin(th) * Math.sin(inc55));
+        const z = rGPS * (Math.sin(raan) * Math.cos(th) + Math.cos(raan) * Math.sin(th) * Math.cos(inc55));
+        ringPts.push(new THREE.Vector3(x, y, z));
+      }
+      const ringGeo = new THREE.BufferGeometry().setFromPoints(ringPts);
+      const ringMat = new THREE.LineBasicMaterial({
+        color: 0x00ffa3,
+        transparent: true,
+        opacity: 0.32
+      });
+      const ringLine = new THREE.LineLoop(ringGeo, ringMat);
+      ringLine.userData = { constellation: 'gps' };
+      this.orbitLinesGroup.add(ringLine);
+
+      for (let s = 0; s < gpsSatsPerPlane; s++) {
+        const satIdNum = 62 + p * 8 + s;
+        const initialTheta = (s / gpsSatsPerPlane) * Math.PI * 2 + (p * 0.7);
+
+        const satObj = new THREE.Group();
+        const coreGeo = new THREE.SphereGeometry(0.075, 10, 10);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffa3 });
+        satObj.add(new THREE.Mesh(coreGeo, coreMat));
+
+        const ringG = new THREE.RingGeometry(0.10, 0.14, 16);
+        const ringM = new THREE.MeshBasicMaterial({
+          color: 0x00ffa3,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.8
+        });
+        satObj.add(new THREE.Mesh(ringG, ringM));
+
+        satObj.userData = {
+          id: `GPS-NAVSTAR-${satIdNum}`,
+          constellation: 'gps',
+          shell: 'GNSS MEO (55.0°)',
+          alt: '20,200 km',
+          vel: '13,900 km/h (3.86 km/s)',
+          period: '718 min (11h 58m)',
+          status: 'TRANSMITIENDO SEÑAL L1/L2/L5',
+          uplink: 'Precisión Submétrica: 0.45m',
+          gateway: 'Red Geodésica Satelital Global'
+        };
+
+        this.satelliteSwarmGroup.add(satObj);
+        this.satellites.push({
+          mesh: satObj,
+          type: 'gps',
+          radius: rGPS,
+          inc: inc55,
+          raan: raan,
+          theta: initialTheta,
+          speed: 0.08 + (p % 2) * 0.015
+        });
+      }
+    }
+
+    this.scene.add(this.orbitLinesGroup);
+    this.scene.add(this.satelliteSwarmGroup);
+
+    // 4. Ground Gateways and Dynamic Laser Uplinks
+    this.groundGateways = [
+      { name: 'Buenos Aires', lat: -34.6037, lng: -58.3816 },
+      { name: 'Lima', lat: -12.0464, lng: -77.0428 },
+      { name: 'Santiago', lat: -33.4489, lng: -70.6693 },
+      { name: 'Bogotá', lat: 4.7110, lng: -74.0721 },
+      { name: 'Madrid', lat: 40.4168, lng: -3.7038 },
+      { name: 'Miami', lat: 25.7617, lng: -80.1918 },
+      { name: 'Tokio', lat: 35.6762, lng: 139.6503 }
+    ];
+
+    this.groundGateways.forEach(gw => {
+      const gwPos = latLngToVector3(gw.lat, gw.lng, 5.0);
+      const lGeo = new THREE.BufferGeometry().setFromPoints([gwPos, gwPos]);
+      const lMat = new THREE.LineBasicMaterial({
+        color: 0x00ffa3,
+        transparent: true,
+        opacity: 0.75,
+        blending: THREE.AdditiveBlending
+      });
+      const line = new THREE.Line(lGeo, lMat);
+      line.userData = { gw: gw, gwPos: gwPos };
+      this.laserLinksGroup.add(line);
+      this.laserLines.push(line);
+    });
+
+    this.scene.add(this.laserLinksGroup);
+  },
+
+  selectSatellite(satData) {
+    this.selectedSat = satData;
+    const idEl = document.getElementById('inspect-sat-id');
+    const shellEl = document.getElementById('inspect-sat-constellation');
+    const uplinkEl = document.getElementById('inspect-sat-uplink');
+    const gwEl = document.getElementById('inspect-sat-gw');
+
+    if (idEl) idEl.innerText = satData.id;
+    if (shellEl) shellEl.innerText = satData.shell;
+    if (uplinkEl) uplinkEl.innerText = satData.uplink;
+    if (gwEl) gwEl.innerText = satData.gateway;
+
+    showNotification(`🛰️ Telemetría Satelital: ${satData.id} (${satData.shell})`, 'info');
+  },
+
+  filterSatellites(filter) {
+    this.satFilter = filter;
+    document.querySelectorAll('.sat-btn-filter').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.getElementById(`btn-sat-filter-${filter}`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    if (this.satellites) {
+      this.satellites.forEach(s => {
+        if (filter === 'all') {
+          s.mesh.visible = true;
+        } else if (filter === 'starlink') {
+          s.mesh.visible = s.type === 'starlink';
+        } else if (filter === 'gps') {
+          s.mesh.visible = s.type === 'gps';
+        }
+      });
+    }
+
+    if (this.orbitLinesGroup) {
+      this.orbitLinesGroup.children.forEach(l => {
+        if (filter === 'all') {
+          l.visible = this.showOrbits;
+        } else if (filter === 'starlink') {
+          l.visible = this.showOrbits && l.userData.constellation === 'starlink';
+        } else if (filter === 'gps') {
+          l.visible = this.showOrbits && l.userData.constellation === 'gps';
+        }
+      });
+    }
+  },
+
+  toggleOrbits() {
+    this.showOrbits = !this.showOrbits;
+    const btn = document.getElementById('btn-toggle-sat-orbits');
+    if (btn) btn.classList.toggle('active', this.showOrbits);
+    if (this.orbitLinesGroup) {
+      this.orbitLinesGroup.visible = this.showOrbits;
+    }
+  },
+
+  toggleLasers() {
+    this.showLasers = !this.showLasers;
+    const btn = document.getElementById('btn-toggle-sat-lasers');
+    if (btn) btn.classList.toggle('active', this.showLasers);
+    if (this.laserLinksGroup) {
+      this.laserLinksGroup.visible = this.showLasers;
+    }
+  },
+
+  initSatelliteSwarmEvents() {
+    const fAll = document.getElementById('btn-sat-filter-all');
+    const fStar = document.getElementById('btn-sat-filter-starlink');
+    const fGps = document.getElementById('btn-sat-filter-gps');
+    const tOrb = document.getElementById('btn-toggle-sat-orbits');
+    const tLas = document.getElementById('btn-toggle-sat-lasers');
+
+    if (fAll) fAll.onclick = () => this.filterSatellites('all');
+    if (fStar) fStar.onclick = () => this.filterSatellites('starlink');
+    if (fGps) fGps.onclick = () => this.filterSatellites('gps');
+    if (tOrb) tOrb.onclick = () => this.toggleOrbits();
+    if (tLas) tLas.onclick = () => this.toggleLasers();
   },
 
   startAnimation() {
@@ -1039,7 +1378,7 @@ function transitionToSurface2D(targetCoords = [-34.5770, -58.4005], zoomLevel = 
       updateMapTiles();
       drawActiveRoute();
       renderVehicleMarkers();
-      init3DBuildings();
+      refresh3DMapElements();
       updateGeoOrientationHUD(`${c.name} • ${c.capital}`);
     }
   }, 80);
@@ -1127,7 +1466,7 @@ function initMap() {
   drawActiveRoute();
   renderVehicleMarkers();
   updateGeoOrientationHUD();
-  init3DBuildings();
+  refresh3DMapElements();
 }
 
 function updateGeoOrientationHUD(customPlace = null) {
@@ -1340,13 +1679,12 @@ function updateMapDarkButtonUI() {
 }
 
 function toggleMapTheme() {
-  if (currentTileMode === 'dark') {
-    updateMapTiles('googleStreet');
-    showNotification('🗺️ Mapa cambiado a Modo Claro Callejero', 'info');
-  } else {
-    updateMapTiles('dark');
-    showNotification('🌑 Mapa cambiado a Modo Oscuro Cyber Táctico', 'success');
-  }
+  const isLight = document.getElementById('app-body')?.classList.contains('light-theme');
+  applyTheme(isLight ? 'dark' : 'light', true);
+  showNotification(
+    isLight ? '🌑 Modo Oscuro Cyber Táctico Activado' : '🗺️ Modo Claro Callejero Activado (Estilo Google Maps 3D)',
+    'info'
+  );
 }
 
 function toggle3DTilt() {
@@ -1464,7 +1802,8 @@ function init3DBuildings() {
           iconAnchor: [b.w / 2, b.d / 2]
         });
 
-        L.marker([b.lat, b.lng], { icon: bIcon, interactive: false }).addTo(buildings3DLayerGroup);
+        const bMarker = L.marker([b.lat, b.lng], { icon: bIcon, interactive: true }).addTo(buildings3DLayerGroup);
+        bMarker.bindPopup(`<b>🏢 ${bName}</b><br>Categoría: ${b.type === 'skysc' ? 'Rascacielos Corporativo' : 'Centro Financiero'}<br>Altura: ${b.h}m (~${Math.round(b.h / 3.2)} pisos)<br><small style="color:#00f0ff">🛡️ Perímetro Seguro Activo: 18m (Evitar Colisión)</small>`);
       });
     });
   }
@@ -1513,6 +1852,213 @@ function toggle3DBuildings() {
   }
   init3DBuildings();
   showNotification(state.show3DBuildings ? '🏢 Edificios 3D Volumétricos Activados' : 'Edificios 3D Ocultos', 'info');
+}
+
+// --- 3D Bridges & Viaducts (Estilo Google Maps 3D Puentes) ---
+let bridges3DLayerGroup = null;
+
+function init3DBridges() {
+  if (!map) return;
+  if (!bridges3DLayerGroup) {
+    bridges3DLayerGroup = L.layerGroup().addTo(map);
+  } else {
+    bridges3DLayerGroup.clearLayers();
+  }
+
+  state.activeBridges = [];
+  if (!state.show3DBridges) return;
+
+  const curVeh = getSelectedVehicle();
+  const route = (curVeh && state.routes[curVeh.routeId]) ? state.routes[curVeh.routeId] : Object.values(state.routes)[0];
+  if (!route || !route.path || route.path.length < 2) return;
+
+  const countryCode = state.selectedCountryCode || 'ARG';
+  const path = route.path;
+
+  let bridgesData = [];
+  if (countryCode === 'PER') {
+    bridgesData = [
+      {
+        id: 'bridge-per-1',
+        name: 'Puente Elevado Javier Prado (Intercambio Vía Expresa)',
+        type: 'Viaducto Elevado Clase A',
+        lat: -12.0950,
+        lng: -77.0260,
+        clearance: 4.80,
+        maxTons: 45,
+        angle: 48
+      },
+      {
+        id: 'bridge-per-2',
+        name: 'Viaducto Paseo de la República / Puente Ricardo Palma',
+        type: 'Puente Colgante Urbano Reforzado',
+        lat: -12.1030,
+        lng: -77.0245,
+        clearance: 4.90,
+        maxTons: 48,
+        angle: 82
+      }
+    ];
+  } else if (countryCode === 'ARG') {
+    bridgesData = [
+      {
+        id: 'bridge-arg-1',
+        name: 'Viaducto Mitre / Cruce Elevado Av. del Libertador',
+        type: 'Viaducto Ferro-Vial Elevado',
+        lat: -34.5695,
+        lng: -58.4110,
+        clearance: 4.80,
+        maxTons: 45,
+        angle: 52
+      },
+      {
+        id: 'bridge-arg-2',
+        name: 'Distribuidor Illia - Puente Costanera Norte',
+        type: 'Puente Autopista Reforzado',
+        lat: -34.5405,
+        lng: -58.4505,
+        clearance: 5.10,
+        maxTons: 50,
+        angle: 60
+      }
+    ];
+  } else {
+    const midIdx = Math.floor(path.length / 2);
+    const pA = path[midIdx - 1] || path[0];
+    const pB = path[midIdx] || path[1];
+    bridgesData = [
+      {
+        id: 'bridge-gen-1',
+        name: `Viaducto Elevado Metropolitano (${route.name.split(' ')[0]})`,
+        type: 'Puente Elevado Autopista',
+        lat: (pA[0] + pB[0]) / 2,
+        lng: (pA[1] + pB[1]) / 2,
+        clearance: 4.80,
+        maxTons: 45,
+        angle: 45
+      }
+    ];
+  }
+
+  bridgesData.forEach(b => {
+    state.activeBridges.push(b);
+
+    const bIcon = L.divIcon({
+      className: 'bridge-3d-structure-wrap',
+      html: `
+        <div class="bridge-3d-model" style="width:115px; height:42px; transform: rotate(${b.angle}deg);">
+          <div class="bridge-pylon-pillar left"></div>
+          <div class="bridge-pylon-pillar right"></div>
+          <div class="bridge-deck" style="width:115px; height:24px; top:9px; left:0;">
+            <div class="bridge-lane-line"></div>
+          </div>
+          <div class="bridge-clearance-pill" title="Clic para inspección estructural del puente">
+            <span class="b-tag">🌉 PUENTE</span>
+            <span class="b-galibo">GÁLIBO: ${b.clearance.toFixed(2)}m</span>
+          </div>
+        </div>
+      `,
+      iconSize: [115, 42],
+      iconAnchor: [57, 21]
+    });
+
+    const marker = L.marker([b.lat, b.lng], { icon: bIcon }).addTo(bridges3DLayerGroup);
+    marker.on('click', () => {
+      openBridgePreviewModal(b);
+    });
+  });
+}
+
+function toggle3DBridges() {
+  state.show3DBridges = !state.show3DBridges;
+  const btn = document.getElementById('btn-toggle-3d-bridges');
+  if (btn) {
+    btn.classList.toggle('active', state.show3DBridges);
+  }
+  init3DBridges();
+  showNotification(state.show3DBridges ? '🌉 Puentes y Viaductos 3D Activados' : 'Puentes 3D Ocultos', 'info');
+}
+
+function openBridgePreviewModal(b) {
+  const modal = document.getElementById('bridge-preview-modal');
+  if (!modal) return;
+
+  const nameEl = document.getElementById('bridge-modal-name');
+  const graphEl = document.getElementById('bridge-graphic-clearance');
+  const infoNameEl = document.getElementById('bridge-info-name');
+  const infoClearEl = document.getElementById('bridge-info-clearance');
+  const infoLoadEl = document.getElementById('bridge-info-load');
+  const typeBadgeEl = document.getElementById('bridge-type-badge');
+
+  if (nameEl) nameEl.innerText = `${b.name.toUpperCase()} // INSPECCIÓN 3D`;
+  if (graphEl) graphEl.innerText = `${b.clearance.toFixed(2)} m`;
+  if (infoNameEl) infoNameEl.innerText = b.name;
+  if (infoClearEl) infoClearEl.innerText = `${b.clearance.toFixed(2)} m (Vehículo Rhino: 2.45m -> APTO ✅)`;
+  if (infoLoadEl) infoLoadEl.innerText = `${b.maxTons} Toneladas (Blindado: 4.8T -> APTO ✅)`;
+  if (typeBadgeEl) typeBadgeEl.innerText = b.type.toUpperCase();
+
+  modal.classList.add('active');
+}
+
+// --- 3D Streets Identification (Estilo Google Maps 3D Calles) ---
+let streets3DLayerGroup = null;
+
+function init3DStreets() {
+  if (!map) return;
+  if (!streets3DLayerGroup) {
+    streets3DLayerGroup = L.layerGroup().addTo(map);
+  } else {
+    streets3DLayerGroup.clearLayers();
+  }
+
+  if (!state.show3DStreets) return;
+
+  const curVeh = getSelectedVehicle();
+  const route = (curVeh && state.routes[curVeh.routeId]) ? state.routes[curVeh.routeId] : Object.values(state.routes)[0];
+  if (!route || !route.path || route.path.length < 2) return;
+
+  const path = route.path;
+  const countryCode = state.selectedCountryCode || 'ARG';
+  const STREET_NAMES = {
+    ARG: ['Av. del Libertador', 'Av. Figueroa Alcorta', 'Av. 9 de Julio', 'Autopista Illia', 'Av. Costanera'],
+    ESP: ['Paseo de la Castellana', 'Calle de Alcalá', 'Gran Vía', 'Paseo del Prado', 'M-30 Lateral'],
+    MEX: ['Paseo de la Reforma', 'Av. Insurgentes Sur', 'Periférico Norte', 'Av. Chapultepec', 'Circuito Interior'],
+    USA: ['Biscayne Boulevard', 'Brickell Avenue', 'Ocean Drive', 'Collins Avenue', 'I-95 Expressway'],
+    COL: ['Carrera 7ma', 'Av. El Dorado (Calle 26)', 'Av. Boyacá', 'Autopista Norte', 'Carrera 30 (NQS)'],
+    CHL: ['Av. Providencia', 'Av. Libertador O\'Higgins', 'Av. Las Condes', 'Costanera Norte', 'Av. Vitacura'],
+    BRA: ['Avenida Paulista', 'Av. Faria Lima', 'Marginal Pinheiros', 'Av. 23 de Maio', 'Rua da Consolação'],
+    PER: ['Av. Javier Prado Este', 'Av. Arequipa', 'Vía Expresa Paseo de la República', 'Av. Salaverry', 'Av. Brasil']
+  };
+
+  const streetList = STREET_NAMES[countryCode] || ['Avenida Principal', 'Vía Rápida Conectora', 'Corredor Seguro'];
+
+  for (let i = 0; i < path.length - 1; i++) {
+    const p1 = path[i];
+    const p2 = path[i + 1];
+    const midLat = (p1[0] + p2[0]) / 2;
+    const midLng = (p1[1] + p2[1]) / 2;
+    const sName = streetList[i % streetList.length];
+
+    const sIcon = L.divIcon({
+      className: 'street-3d-badge-wrap',
+      html: `
+        <div class="street-3d-badge">
+          <i class="fa-solid fa-road"></i>
+          <span>${sName}</span>
+        </div>
+      `,
+      iconSize: [140, 26],
+      iconAnchor: [70, 13]
+    });
+
+    L.marker([midLat, midLng], { icon: sIcon, interactive: false }).addTo(streets3DLayerGroup);
+  }
+}
+
+function refresh3DMapElements() {
+  init3DBuildings();
+  init3DBridges();
+  init3DStreets();
 }
 
 function toggleInmersiveNav() {
@@ -1804,7 +2350,7 @@ function deployFleetToCountry(countryCode) {
 
   drawActiveRoute();
   renderVehicleMarkers();
-  init3DBuildings();
+  refresh3DMapElements();
   updateGeoOrientationHUD(`${c.name} • ${c.capital}`);
   updateTelemetryDisplay(getSelectedVehicle());
 
@@ -1842,6 +2388,9 @@ function applyTheme(theme, syncMap = true) {
     if (syncMap) {
       currentTileMode = 'googleStreet';
     }
+    if (typeof Globe3D !== 'undefined' && Globe3D.applyGlobeTexture) {
+      Globe3D.applyGlobeTexture('sat');
+    }
   } else {
     body.classList.add('dark-tactical-theme');
     body.classList.remove('light-theme');
@@ -1850,10 +2399,14 @@ function applyTheme(theme, syncMap = true) {
     if (syncMap) {
       currentTileMode = 'dark';
     }
+    if (typeof Globe3D !== 'undefined' && Globe3D.applyGlobeTexture) {
+      Globe3D.applyGlobeTexture('dark');
+    }
   }
 
   localStorage.setItem('rhino_theme', theme);
   updateMapTiles(currentTileMode);
+  refresh3DMapElements();
 }
 
 function toggleTheme() {
@@ -3418,6 +3971,13 @@ function setupEventListeners() {
     buildings3DBtn.addEventListener('click', toggle3DBuildings);
   }
 
+  // 3D Bridges & Viaducts Toggle Button (Estilo Google Maps 3D Puentes)
+  const bridges3DBtn = document.getElementById('btn-toggle-3d-bridges');
+  if (bridges3DBtn) {
+    bridges3DBtn.classList.toggle('active', state.show3DBridges);
+    bridges3DBtn.addEventListener('click', toggle3DBridges);
+  }
+
   // Dedicated Map Dark / Light Mode Toggle Button
   const mapDarkToggleBtn = document.getElementById('btn-toggle-map-dark');
   if (mapDarkToggleBtn) {
@@ -3471,6 +4031,20 @@ function setupEventListeners() {
 
   const ackDestBtn = document.getElementById('btn-dest-ack');
   if (ackDestBtn) ackDestBtn.addEventListener('click', closeDestinationPreview);
+
+  // 3D Bridge Preview Modal Controls
+  const closeBridgeBtn = document.getElementById('btn-close-bridge-preview');
+  const ackBridgeBtn = document.getElementById('btn-bridge-ack');
+  const bridgeModal = document.getElementById('bridge-preview-modal');
+  if (closeBridgeBtn && bridgeModal) {
+    closeBridgeBtn.addEventListener('click', () => bridgeModal.classList.remove('active'));
+  }
+  if (ackBridgeBtn && bridgeModal) {
+    ackBridgeBtn.addEventListener('click', () => {
+      bridgeModal.classList.remove('active');
+      showNotification('✅ Cruce de puente verificado y autorizado', 'success');
+    });
+  }
 
   // Close Dispatch Modal
   const closeDispatchBtn = document.getElementById('dispatch-close-btn');
