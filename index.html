@@ -434,74 +434,88 @@
 
         <!-- Floating Map Overlay Controls -->
         <div class="map-overlay-bar">
-          <div class="map-status-chip">
-            <span class="pulse-indicator"></span>
-            <span id="map-tracking-status">SEGUIMIENTO EN VIVO</span>
-            <span class="map-location-breadcrumb" id="map-location-breadcrumb">📍 Buenos Aires, Argentina &bull; Sudamérica</span>
+          <!-- Top Row: Left Status & Country Quick Jumper, Right Map Theme & Tools -->
+          <div class="map-overlay-top-row">
+            <div class="map-overlay-left-cluster">
+              <div class="map-status-chip">
+                <span class="pulse-indicator"></span>
+                <span id="map-tracking-status">SEGUIMIENTO EN VIVO</span>
+                <span class="map-location-breadcrumb" id="map-location-breadcrumb">📍 Buenos Aires &bull; Sudamérica</span>
+              </div>
+
+              <!-- Country Quick Jumper in 2D Surface Mode -->
+              <div class="surface-country-bar">
+                <i class="fa-solid fa-globe text-cyan"></i>
+                <select id="surface-country-select" class="tactical-country-select-sm" title="Cambiar a otro país">
+                  <option value="ARG">🇦🇷 Argentina</option>
+                  <option value="ESP">🇪🇸 España</option>
+                  <option value="MEX">🇲🇽 México</option>
+                  <option value="USA">🇺🇸 EE.UU.</option>
+                  <option value="COL">🇨🇴 Colombia</option>
+                  <option value="CHL">🇨🇱 Chile</option>
+                  <option value="BRA">🇧🇷 Brasil</option>
+                  <option value="PER">🇵🇪 Perú</option>
+                  <option value="URY">🇺🇾 Uruguay</option>
+                  <option value="FRA">🇫🇷 Francia</option>
+                  <option value="DEU">🇩🇪 Alemania</option>
+                  <option value="ITA">🇮🇹 Italia</option>
+                  <option value="GBR">🇬🇧 Reino Unido</option>
+                  <option value="JPN">🇯🇵 Japón</option>
+                  <option value="CAN">🇨🇦 Canadá</option>
+                  <option value="AUS">🇦🇺 Australia</option>
+                </select>
+                <button class="btn-deploy-country" id="btn-deploy-country" title="Mudar vehículos y patrullar en este país">
+                  <i class="fa-solid fa-location-arrow"></i> Desplegar
+                </button>
+              </div>
+            </div>
+
+            <!-- Right Controls: Dedicated Map Dark/Light Mode Button + Tile Style + Quick Actions -->
+            <div class="map-actions-dock">
+              <!-- Botón Prominente de Modo Oscuro / Claro del Mapa -->
+              <button class="map-theme-toggle-btn active" id="btn-toggle-map-dark" title="Alternar entre Mapa Oscuro Cyber y Mapa Claro">
+                <i class="fa-solid fa-moon text-cyan"></i>
+                <span id="map-dark-btn-text">MAPA OSCURO</span>
+              </button>
+
+              <select id="map-tile-style-select" class="tactical-layer-select" title="Estilo y Capa del Mapa">
+                <option value="dark" selected>🌑 Táctico Cyber (Modo Oscuro)</option>
+                <option value="googleStreet">🗺️ Callejero Claro (Modo Claro)</option>
+                <option value="sat">🛰️ Satelital HD Órbita</option>
+                <option value="street">🌐 OpenStreetMap</option>
+              </select>
+              <button class="map-btn" id="btn-recenter" title="Re-centrar en el vehículo">
+                <i class="fa-solid fa-crosshairs"></i>
+              </button>
+              <button class="map-btn" id="btn-toggle-route-corridor" title="Mostrar/Ocultar pasillo de tolerancia">
+                <i class="fa-solid fa-draw-polygon"></i>
+              </button>
+              <button class="map-btn" id="btn-toggle-checkpoints" title="Mostrar Checkpoints">
+                <i class="fa-solid fa-location-dot"></i>
+              </button>
+            </div>
           </div>
 
-          <!-- Country Quick Jumper in 2D Surface Mode -->
-          <div class="surface-country-bar">
-            <i class="fa-solid fa-globe text-cyan"></i>
-            <select id="surface-country-select" class="tactical-country-select-sm" title="Cambiar a otro país">
-              <option value="ARG">🇦🇷 Argentina</option>
-              <option value="ESP">🇪🇸 España</option>
-              <option value="MEX">🇲🇽 México</option>
-              <option value="USA">🇺🇸 EE.UU.</option>
-              <option value="COL">🇨🇴 Colombia</option>
-              <option value="CHL">🇨🇱 Chile</option>
-              <option value="BRA">🇧🇷 Brasil</option>
-              <option value="PER">🇵🇪 Perú</option>
-              <option value="URY">🇺🇾 Uruguay</option>
-              <option value="FRA">🇫🇷 Francia</option>
-              <option value="DEU">🇩🇪 Alemania</option>
-              <option value="ITA">🇮🇹 Italia</option>
-              <option value="GBR">🇬🇧 Reino Unido</option>
-              <option value="JPN">🇯🇵 Japón</option>
-              <option value="CAN">🇨🇦 Canadá</option>
-              <option value="AUS">🇦🇺 Australia</option>
-            </select>
-            <button class="btn-deploy-country" id="btn-deploy-country" title="Mudar vehículos y patrullar en este país">
-              <i class="fa-solid fa-location-arrow"></i> Desplegar Flota Aquí
-            </button>
-          </div>
-
-          <!-- Geo Scopes Navigator: 3D PLANETA / REGIÓN / CIUDAD / VEHÍCULO / MI GPS -->
-          <div class="geo-scope-bar">
-            <button class="scope-btn" id="scope-btn-globe"
-              title="Salir al Espacio // Ver Planeta Tierra 3D Rotativo">
-              <i class="fa-solid fa-globe text-cyan"></i> <span>PLANETA 3D</span>
-            </button>
-            <button class="scope-btn" id="scope-btn-region" title="Ver Región">
-              <i class="fa-solid fa-map"></i> <span>REGIÓN</span>
-            </button>
-            <button class="scope-btn" id="scope-btn-city" title="Ver Ciudad">
-              <i class="fa-solid fa-city"></i> <span>CIUDAD</span>
-            </button>
-            <button class="scope-btn active" id="scope-btn-veh" title="Seguir Vehículo en Calle (2D)">
-              <i class="fa-solid fa-crosshairs"></i> <span>VEHÍCULO</span>
-            </button>
-            <button class="scope-btn btn-my-gps" id="scope-btn-my-gps" title="Ubicar Mi Dispositivo Actual (GPS)">
-              <i class="fa-solid fa-location-arrow"></i> <span>MI GPS</span>
-            </button>
-          </div>
-
-          <div class="map-actions-dock">
-            <select id="map-tile-style-select" class="tactical-layer-select" title="Estilo de Mapa (Sin API Key)">
-              <option value="dark" selected>🌑 Táctico Cyber Nocturno (Modo Oscuro)</option>
-              <option value="sat">🛰️ Satelital HD Órbita</option>
-              <option value="googleStreet">🗺️ Callejero Global (Estilo Google)</option>
-              <option value="street">🌐 OpenStreetMap Mundial</option>
-            </select>
-            <button class="map-btn" id="btn-recenter" title="Re-centrar en el vehículo">
-              <i class="fa-solid fa-crosshairs"></i>
-            </button>
-            <button class="map-btn" id="btn-toggle-route-corridor" title="Mostrar/Ocultar pasillo de tolerancia">
-              <i class="fa-solid fa-draw-polygon"></i>
-            </button>
-            <button class="map-btn" id="btn-toggle-checkpoints" title="Mostrar Checkpoints">
-              <i class="fa-solid fa-location-dot"></i>
-            </button>
+          <!-- Second Row: Geo Scopes Navigator Floating Centered (3D PLANETA / REGIÓN / CIUDAD / VEHÍCULO / MI GPS) -->
+          <div class="geo-scope-bar-wrapper">
+            <div class="geo-scope-bar">
+              <button class="scope-btn" id="scope-btn-globe"
+                title="Salir al Espacio // Ver Planeta Tierra 3D Rotativo">
+                <i class="fa-solid fa-globe text-cyan"></i> <span>PLANETA 3D</span>
+              </button>
+              <button class="scope-btn" id="scope-btn-region" title="Ver Región">
+                <i class="fa-solid fa-map"></i> <span>REGIÓN</span>
+              </button>
+              <button class="scope-btn" id="scope-btn-city" title="Ver Ciudad">
+                <i class="fa-solid fa-city"></i> <span>CIUDAD</span>
+              </button>
+              <button class="scope-btn active" id="scope-btn-veh" title="Seguir Vehículo en Calle (2D)">
+                <i class="fa-solid fa-crosshairs"></i> <span>VEHÍCULO</span>
+              </button>
+              <button class="scope-btn btn-my-gps" id="scope-btn-my-gps" title="Ubicar Mi Dispositivo Actual (GPS)">
+                <i class="fa-solid fa-location-arrow"></i> <span>MI GPS</span>
+              </button>
+            </div>
           </div>
         </div>
 

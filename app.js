@@ -223,32 +223,32 @@ let currentTileMode = 'dark'; // 'dark' (default cyber dark tactical) | 'sat' | 
 
 // Verified High-Tech Tile Sources (100% Free, Zero API Keys, Worldwide)
 const TILE_CONFIG = {
-  // 1. Google / Esri Street Navigation: Full color streets, avenues, borders, cities worldwide
+  // 1. Tactical Cyber Dark (CartoDB Dark Matter - High Contrast Neon Lines, Obsidian Base & Crisp Labels)
+  dark: {
+    name: 'Táctico Oscuro Cyber',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    maxZoom: 20,
+    subdomains: 'abcd'
+  },
+  // 2. Google / Esri Street Navigation: Full color streets, avenues, borders, cities worldwide
   googleStreet: {
-    name: 'Google / Esri Callejero Global',
+    name: 'Callejero Claro Global',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
     maxZoom: 19,
     subdomains: 'abc'
   },
-  // 2. High-Res Satellite HD (Google Earth Style)
+  // 3. High-Res Satellite HD (Google Earth Style)
   sat: {
     name: 'Satelital HD Órbita',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     maxZoom: 19,
     subdomains: 'abc'
   },
-  // 3. OpenStreetMap: Open Global Street Grid
+  // 4. OpenStreetMap: Open Global Street Grid
   street: {
     name: 'OpenStreetMap Mundial',
     url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     maxZoom: 19,
-    subdomains: 'abc'
-  },
-  // 4. Tactical Cyber Dark
-  dark: {
-    name: 'Táctico Oscuro Cyber',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-    maxZoom: 16,
     subdomains: 'abc'
   }
 };
@@ -1142,15 +1142,16 @@ function setUserGpsMarker(lat, lng) {
 // Clean, 100% Free World Tile Switcher without API keys
 function updateMapTiles(requestedMode = null) {
   if (!map) return;
-  if (requestedMode) {
+  if (requestedMode && TILE_CONFIG[requestedMode]) {
     currentTileMode = requestedMode;
   }
+  localStorage.setItem('rhino_map_tile_mode', currentTileMode);
 
   if (currentTileLayer) {
     map.removeLayer(currentTileLayer);
   }
 
-  const config = TILE_CONFIG[currentTileMode] || TILE_CONFIG.googleStreet;
+  const config = TILE_CONFIG[currentTileMode] || TILE_CONFIG.dark;
 
   currentTileLayer = L.tileLayer(config.url, {
     maxZoom: config.maxZoom,
@@ -1158,6 +1159,46 @@ function updateMapTiles(requestedMode = null) {
   }).addTo(map);
 
   currentTileLayer.bringToBack();
+
+  // Sync Dropdown Select
+  const selectEl = document.getElementById('map-tile-style-select');
+  if (selectEl && selectEl.value !== currentTileMode) {
+    selectEl.value = currentTileMode;
+  }
+
+  // Sync Map Theme Toggle Button UI
+  updateMapDarkButtonUI();
+}
+
+function updateMapDarkButtonUI() {
+  const btn = document.getElementById('btn-toggle-map-dark');
+  if (!btn) return;
+
+  btn.classList.remove('active', 'light-mode', 'sat-mode');
+
+  if (currentTileMode === 'dark') {
+    btn.classList.add('active');
+    btn.innerHTML = `<i class="fa-solid fa-moon text-cyan"></i> <span id="map-dark-btn-text">MAPA OSCURO</span>`;
+    btn.title = "Modo Oscuro Cyber Activo. Clic para cambiar a Mapa Claro";
+  } else if (currentTileMode === 'sat') {
+    btn.classList.add('sat-mode');
+    btn.innerHTML = `<i class="fa-solid fa-satellite text-purple"></i> <span id="map-dark-btn-text">SATELITAL HD</span>`;
+    btn.title = "Modo Satelital Activo. Clic para volver a Modo Oscuro";
+  } else {
+    btn.classList.add('light-mode');
+    btn.innerHTML = `<i class="fa-solid fa-sun text-amber"></i> <span id="map-dark-btn-text">MAPA CLARO</span>`;
+    btn.title = "Modo Claro Activo. Clic para cambiar a Modo Oscuro";
+  }
+}
+
+function toggleMapTheme() {
+  if (currentTileMode === 'dark') {
+    updateMapTiles('googleStreet');
+    showNotification('🗺️ Mapa cambiado a Modo Claro Callejero', 'info');
+  } else {
+    updateMapTiles('dark');
+    showNotification('🌑 Mapa cambiado a Modo Oscuro Cyber Táctico', 'success');
+  }
 }
 
 function deployFleetToCountry(countryCode) {
@@ -1241,10 +1282,16 @@ function deployFleetToCountry(countryCode) {
 // --- Theme System (Dark Flúor / Light Minimalist) ---
 function initTheme() {
   const savedTheme = localStorage.getItem('rhino_theme') || 'dark';
-  applyTheme(savedTheme);
+  const savedMapTile = localStorage.getItem('rhino_map_tile_mode');
+  if (savedMapTile && TILE_CONFIG[savedMapTile]) {
+    currentTileMode = savedMapTile;
+  } else {
+    currentTileMode = savedTheme === 'light' ? 'googleStreet' : 'dark';
+  }
+  applyTheme(savedTheme, false);
 }
 
-function applyTheme(theme) {
+function applyTheme(theme, syncMap = true) {
   const body = document.getElementById('app-body');
   const icon = document.getElementById('theme-icon');
   const label = document.getElementById('theme-label');
@@ -1254,21 +1301,27 @@ function applyTheme(theme) {
     body.classList.add('light-theme');
     if (icon) icon.className = 'fa-solid fa-moon text-cyan';
     if (label) label.innerText = 'TEMA OSCURO';
+    if (syncMap && currentTileMode === 'dark') {
+      currentTileMode = 'googleStreet';
+    }
   } else {
     body.classList.add('dark-tactical-theme');
     body.classList.remove('light-theme');
     if (icon) icon.className = 'fa-solid fa-sun text-amber';
     if (label) label.innerText = 'TEMA CLARO';
+    if (syncMap && (currentTileMode === 'googleStreet' || currentTileMode === 'street')) {
+      currentTileMode = 'dark';
+    }
   }
 
   localStorage.setItem('rhino_theme', theme);
-  updateMapTiles();
+  updateMapTiles(currentTileMode);
 }
 
 function toggleTheme() {
   const body = document.getElementById('app-body');
   const isLight = body.classList.contains('light-theme');
-  applyTheme(isLight ? 'dark' : 'light');
+  applyTheme(isLight ? 'dark' : 'light', true);
 }
 
 // Draw polyline and buffer corridor
@@ -2618,6 +2671,12 @@ function setupEventListeners() {
     mapTileSelect.addEventListener('change', (e) => {
       updateMapTiles(e.target.value);
     });
+  }
+
+  // Dedicated Map Dark / Light Mode Toggle Button
+  const mapDarkToggleBtn = document.getElementById('btn-toggle-map-dark');
+  if (mapDarkToggleBtn) {
+    mapDarkToggleBtn.addEventListener('click', toggleMapTheme);
   }
 
   // Geo Scope Navigation Buttons
