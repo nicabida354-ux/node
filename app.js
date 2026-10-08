@@ -219,7 +219,7 @@ let routePolyline = null;
 let routeCorridorPolygon = null;
 let checkpointMarkers = [];
 let currentTileLayer = null;
-let currentTileMode = 'googleStreet'; // 'googleStreet' (default Google/Esri) | 'sat' | 'street' | 'dark'
+let currentTileMode = 'dark'; // 'dark' (default cyber dark tactical) | 'sat' | 'googleStreet' | 'street'
 
 // Verified High-Tech Tile Sources (100% Free, Zero API Keys, Worldwide)
 const TILE_CONFIG = {
