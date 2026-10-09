@@ -34,10 +34,14 @@
   <!-- Top Tactical SatelliteMap Header -->
   <header class="top-nav" id="top-nav">
     <div class="brand-section">
-      <div class="satellitemap-brand" onclick="switchProjectionMode('globe')" title="AITUE Nexus+ // Si lo conectamos, lo ves">
-        <i class="fa-solid fa-satellite text-cyan sat-pulse-icon"></i>
-        <span class="sat-domain">AITUE <span class="sat-sub-brand">NEXUS<span class="text-cyan">+</span></span></span>
-        <span class="brand-badge-rhino">Si lo conectamos, lo ves</span>
+      <div class="satellitemap-brand" onclick="switchProjectionMode('globe')" title="AITUE NEXUS+ // Si lo conectamos, lo ves">
+        <div class="brand-hex-icon">
+          <i class="fa-solid fa-satellite text-cyan sat-pulse-icon"></i>
+        </div>
+        <div class="brand-title-wrap">
+          <div class="sat-domain">AITUE <span class="sat-sub-brand">NEXUS<span class="text-cyan">+</span></span></div>
+          <div class="brand-tagline">"Si lo conectamos, lo ves" &bull; <span class="brand-hw-tag">ULTRA+</span></div>
+        </div>
       </div>
     </div>
 
@@ -407,53 +411,160 @@
           </div>
         </div>
 
-        <!-- Watermark Orbital AITUE NEXUS+ -->
-        <div class="satellitemap-watermark" id="satellitemap-watermark">
-          <div class="sat-wm-title">aitue nexus<span class="text-cyan">+</span></div>
-          <div class="sat-wm-sub"><span id="wm-sat-count">79</span> dispositivos &bull; si lo conectamos, lo ves</div>
+        <!-- AITUE Brand Cockpit HUD (Superior Izquierda) -->
+        <div class="aitue-brand-hud" id="aitue-brand-hud">
+          <div class="brand-hud-header">
+            <div class="brand-hud-logo-wrap">
+              <div class="brand-hud-hex"><i class="fa-solid fa-satellite text-cyan sat-pulse-icon"></i></div>
+              <div class="brand-hud-title-col">
+                <div class="brand-hud-title">AITUE <span class="brand-hud-plus">NEXUS<span class="text-cyan">+</span></span></div>
+                <div class="brand-hud-slogan">"Si lo conectamos, lo ves"</div>
+              </div>
+            </div>
+            <div class="brand-hud-pill">
+              <span class="hud-live-dot"></span> <span>Enlace ULTRA+ Activo</span>
+            </div>
+          </div>
+
+          <div class="brand-hud-metrics">
+            <div class="hud-metric-chip" title="Dispositivos y satélites enlazados a la red global">
+              <i class="fa-solid fa-satellite-dish text-cyan"></i>
+              <div class="hmc-data">
+                <span class="hmc-val" id="hud-stat-sats">79</span>
+                <span class="hmc-label">Nodos en órbita</span>
+              </div>
+            </div>
+            <div class="hud-metric-chip" title="Unidades móviles monitoreadas en tiempo real">
+              <i class="fa-solid fa-truck-shield text-green"></i>
+              <div class="hmc-data">
+                <span class="hmc-val" id="hud-stat-fleets">2</span>
+                <span class="hmc-label">Flota en línea</span>
+              </div>
+            </div>
+            <div class="hud-metric-chip" title="Sensores IoT ESP32 (Presencia, PIR, Radar, Térmico)">
+              <i class="fa-solid fa-microchip text-amber"></i>
+              <div class="hmc-data">
+                <span class="hmc-val" id="hud-stat-iot">3</span>
+                <span class="hmc-label">Nodos ESP32 IoT</span>
+              </div>
+            </div>
+            <div class="hud-metric-chip" title="Latencia media de transmisión por enlace satelital LEO">
+              <i class="fa-solid fa-bolt text-purple"></i>
+              <div class="hmc-data">
+                <span class="hmc-val">23 ms</span>
+                <span class="hmc-label">Latencia LEO</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="brand-hud-toggle-row">
+            <button class="btn-hud-texture active" id="btn-hud-mode-tactical" onclick="setGlobeModeExplicit('dark')" title="Modo Táctico AITUE (Cyber azul con fronteras y cuadrícula cobriza)">
+              <i class="fa-solid fa-shield-halved"></i> <span>3D Táctico AITUE</span>
+            </button>
+            <button class="btn-hud-texture" id="btn-hud-mode-real" onclick="setGlobeModeExplicit('light')" title="Modo Tierra Real (Vista satelital desde el espacio con fondo oscuro)">
+              <i class="fa-solid fa-earth-americas"></i> <span>3D Tierra Real</span>
+            </button>
+          </div>
         </div>
 
-        <!-- Orbit Legend Card (Estilo Exacto satellitemap.space) -->
-        <div class="satellitemap-orbit-card" id="satellitemap-orbit-card">
+        <!-- Centro de Cobertura Satelital y Telemetría AITUE (Superior Derecha) -->
+        <div class="satellitemap-orbit-card aitue-telemetry-card" id="satellitemap-orbit-card">
           <div class="orbit-card-header">
-            <span class="orbit-card-title">Orbit</span>
+            <div class="orbit-card-title-group">
+              <i class="fa-solid fa-satellite-dish text-cyan"></i>
+              <div>
+                <span class="orbit-card-title">Red Satelital AITUE</span>
+                <span class="orbit-card-subtitle">Constelación y Enlace ULTRA+</span>
+              </div>
+            </div>
             <div class="orbit-card-controls">
-              <button class="orbit-card-btn" id="btn-toggle-orbit-theme" title="Modo Claro / Oscuro"><i class="fa-solid fa-circle-half-stroke text-cyan"></i></button>
-              <button class="orbit-card-btn" id="btn-toggle-orbit-card" title="Minimizar"><i class="fa-solid fa-chevron-up" id="orbit-toggle-icon"></i></button>
+              <button class="orbit-card-btn" id="btn-toggle-orbit-theme" title="Alternar estilo: Táctico / Tierra Real"><i class="fa-solid fa-circle-half-stroke text-cyan"></i></button>
+              <button class="orbit-card-btn" id="btn-toggle-orbit-card" title="Minimizar panel"><i class="fa-solid fa-chevron-up" id="orbit-toggle-icon"></i></button>
               <button class="orbit-card-btn" onclick="document.getElementById('satellitemap-orbit-card').classList.toggle('hidden')" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
             </div>
           </div>
+
           <div class="orbit-card-body" id="orbit-card-body">
-            <div class="orbit-swatches-grid">
-              <div class="orbit-item"><span class="orbit-color molniya"></span><span>Molniya</span></div>
-              <div class="orbit-item"><span class="orbit-color semi-sync"></span><span>Semi-Sync</span></div>
-              <div class="orbit-item"><span class="orbit-color oneweb"></span><span>OneWeb</span></div>
-              <div class="orbit-item"><span class="orbit-color gnss"></span><span>GNSS</span></div>
-              <div class="orbit-item"><span class="orbit-color sun-sync"></span><span>Sun-Sync</span></div>
-              <div class="orbit-item"><span class="orbit-color geo"></span><span>GEO</span></div>
-              <div class="orbit-item"><span class="orbit-color gso"></span><span>GSO</span></div>
-              <div class="orbit-item"><span class="orbit-color heo-ellip"></span><span>HEO Elliptical</span></div>
-              <div class="orbit-item"><span class="orbit-color heo"></span><span>HEO</span></div>
-              <div class="orbit-item"><span class="orbit-color polar"></span><span>Polar</span></div>
-              <div class="orbit-item"><span class="orbit-color retrograde"></span><span>Retrograde</span></div>
-              <div class="orbit-item"><span class="orbit-color elliptical"></span><span>Elliptical</span></div>
-              <div class="orbit-item"><span class="orbit-color circular"></span><span>Circular</span></div>
-              <div class="orbit-item"><span class="orbit-color meo"></span><span>MEO</span></div>
-              <div class="orbit-item"><span class="orbit-color leo"></span><span>LEO</span></div>
-              <div class="orbit-item"><span class="orbit-color unknown"></span><span>Unknown</span></div>
+            <!-- Píldoras de Filtro Rápido -->
+            <div class="orbit-filter-pills">
+              <button class="orbit-pill active" onclick="filterAitueNetwork('all')" id="btn-filter-all" title="Ver todos los satélites en órbita">
+                <span>Todos (79)</span>
+              </button>
+              <button class="orbit-pill" onclick="filterAitueNetwork('gnss')" id="btn-filter-gnss" title="Aislar satélites GNSS para rastreo de flotas">
+                <span class="dot-swatch gnss"></span> <span>GNSS (42)</span>
+              </button>
+              <button class="orbit-pill" onclick="filterAitueNetwork('circular')" id="btn-filter-circular" title="Aislar satélites Starlink LEO para internet y video">
+                <span class="dot-swatch circular"></span> <span>Starlink (27)</span>
+              </button>
+              <button class="orbit-pill" onclick="filterAitueNetwork('meo')" id="btn-filter-meo" title="Aislar satélites MEO de enlace industrial">
+                <span class="dot-swatch meo"></span> <span>MEO (9)</span>
+              </button>
+              <button class="orbit-pill" onclick="filterAitueNetwork('retrograde')" id="btn-filter-retro" title="Aislar órbita polar para zonas extremas">
+                <span class="dot-swatch retrograde"></span> <span>Polar (1)</span>
+              </button>
             </div>
-            <div class="orbit-dist-box">
-              <div class="orbit-dist-header">Distribution (79 visible / 79 total)</div>
-              <div class="orbit-dist-row"><span>GNSS</span><span class="font-mono">42</span></div>
-              <div class="orbit-dist-row"><span>Retrograde</span><span class="font-mono">1</span></div>
-              <div class="orbit-dist-row"><span>Circular</span><span class="font-mono">27</span></div>
-              <div class="orbit-dist-row"><span>MEO</span><span class="font-mono">9</span></div>
+
+            <!-- Guía Explicativa Intuitiva -->
+            <div class="orbit-layers-guide">
+              <div class="guide-item" onclick="filterAitueNetwork('gnss')" title="Clic para filtrar GNSS">
+                <div class="guide-color-bar gnss"></div>
+                <div class="guide-content">
+                  <div class="guide-title"><b>GNSS / GPS de Flota</b> <span class="guide-count">42 satélites</span></div>
+                  <p class="guide-desc">Posicionamiento en tiempo real para vehículos, escoltas y activos fijos con precisión submétrica.</p>
+                </div>
+              </div>
+
+              <div class="guide-item" onclick="filterAitueNetwork('circular')" title="Clic para filtrar Starlink LEO">
+                <div class="guide-color-bar circular"></div>
+                <div class="guide-content">
+                  <div class="guide-title"><b>Baja Órbita LEO (Starlink)</b> <span class="guide-count">27 satélites</span></div>
+                  <p class="guide-desc">Streaming de cámaras espía y datos en vivo en rutas sin cobertura celular.</p>
+                </div>
+              </div>
+
+              <div class="guide-item" onclick="filterAitueNetwork('meo')" title="Clic para filtrar MEO Industrial">
+                <div class="guide-color-bar meo"></div>
+                <div class="guide-content">
+                  <div class="guide-title"><b>Relevo Industrial MEO</b> <span class="guide-count">9 satélites</span></div>
+                  <p class="guide-desc">Enlace robusto para centros logísticos, bases remotas, minería y agro.</p>
+                </div>
+              </div>
+
+              <div class="guide-item" onclick="filterAitueNetwork('retrograde')" title="Clic para filtrar Polar">
+                <div class="guide-color-bar retrograde"></div>
+                <div class="guide-content">
+                  <div class="guide-title"><b>Órbita Polar Extrema</b> <span class="guide-count">1 satélite</span></div>
+                  <p class="guide-desc">Monitoreo ininterrumpido en pasos cordilleranos, corredores australes y mar.</p>
+                </div>
+              </div>
             </div>
-            <div class="orbit-footer-nav">
-              <button class="orbit-nav-btn">&lt;</button>
-              <button class="orbit-nav-btn"><i class="fa-solid fa-bars"></i></button>
-              <button class="orbit-nav-btn">&gt;</button>
+
+            <!-- Tarjeta de Inspección Táctica Interactiva -->
+            <div class="sat-inspect-dock" id="sat-inspect-dock">
+              <div class="inspect-dock-header">
+                <i class="fa-solid fa-crosshairs text-cyan"></i>
+                <span id="inspect-dock-title">Telemetría de Satélite en Enlace</span>
+              </div>
+              <div class="inspect-dock-body">
+                <div class="inspect-row">
+                  <span>Nodo activo:</span>
+                  <b class="text-cyan font-mono" id="inspect-sat-id">GNSS-NAVSTAR-101</b>
+                </div>
+                <div class="inspect-row">
+                  <span>Misión AITUE:</span>
+                  <span class="text-green" id="inspect-sat-role">Rastreo Vehicular Primario ULTRA+</span>
+                </div>
+                <div class="inspect-row">
+                  <span>Altitud / Velocidad:</span>
+                  <span class="font-mono text-muted" id="inspect-sat-alt">20,200 km &bull; 13,900 km/h</span>
+                </div>
+                <div class="inspect-row">
+                  <span>Enlace con flota:</span>
+                  <span class="text-green" id="inspect-sat-status">🟢 Transmitiendo datos (L1/L2)</span>
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
 

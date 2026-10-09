@@ -1243,44 +1243,79 @@ const Globe3D = {
   selectSatellite(satData) {
     this.selectedSat = satData;
     const idEl = document.getElementById('inspect-sat-id');
-    const shellEl = document.getElementById('inspect-sat-constellation');
-    const uplinkEl = document.getElementById('inspect-sat-uplink');
-    const gwEl = document.getElementById('inspect-sat-gw');
+    const roleEl = document.getElementById('inspect-sat-role');
+    const altEl = document.getElementById('inspect-sat-alt');
+    const statusEl = document.getElementById('inspect-sat-status');
+    const dockEl = document.getElementById('sat-inspect-dock');
+
+    let role = 'Enlace Satelital AITUE ULTRA+';
+    if (satData.type === 'gnss') role = 'Rastreo Vehicular Primario ULTRA+ (L1/L2)';
+    else if (satData.type === 'circular') role = 'Banda Ancha Satelital Starlink LEO';
+    else if (satData.type === 'meo') role = 'Relevo Industrial AITUE Base / MEO';
+    else if (satData.type === 'retrograde') role = 'Monitoreo Polar & Zonas Extremas';
 
     if (idEl) idEl.innerText = satData.id;
-    if (shellEl) shellEl.innerText = satData.shell;
-    if (uplinkEl) uplinkEl.innerText = satData.uplink;
-    if (gwEl) gwEl.innerText = satData.gateway;
+    if (roleEl) roleEl.innerText = role;
+    if (altEl) altEl.innerText = `${satData.alt || '550 km'} \u2022 ${satData.vel || '27,360 km/h'}`;
+    if (statusEl) statusEl.innerHTML = `<span class="text-green">\ud83d\udfe2 ${satData.status || 'Operacional'}</span>`;
 
-    showNotification(`🛰️ Telemetría Satelital: ${satData.id} (${satData.shell})`, 'info');
+    if (dockEl) {
+      dockEl.style.borderColor = 'rgba(0, 240, 255, 0.85)';
+      dockEl.style.boxShadow = '0 0 16px rgba(0, 240, 255, 0.35)';
+      setTimeout(() => {
+        dockEl.style.borderColor = 'rgba(0, 240, 255, 0.35)';
+        dockEl.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.6)';
+      }, 1200);
+    }
+
+    showNotification(`\ud83d\udef0\ufe0f Telemetr\u00eda Satelital: ${satData.id} // ${role}`, 'info');
   },
 
   filterSatellites(filter) {
     this.satFilter = filter;
-    document.querySelectorAll('.sat-btn-filter').forEach(btn => btn.classList.remove('active'));
-    const activeBtn = document.getElementById(`btn-sat-filter-${filter}`);
+    document.querySelectorAll('.orbit-pill').forEach(btn => btn.classList.remove('active'));
+    const pillMap = {
+      'all': 'btn-filter-all',
+      'gnss': 'btn-filter-gnss',
+      'gps': 'btn-filter-gnss',
+      'circular': 'btn-filter-circular',
+      'starlink': 'btn-filter-circular',
+      'meo': 'btn-filter-meo',
+      'retrograde': 'btn-filter-retro',
+      'polar': 'btn-filter-retro'
+    };
+    const activeBtn = document.getElementById(pillMap[filter]);
     if (activeBtn) activeBtn.classList.add('active');
 
     if (this.satellites) {
       this.satellites.forEach(s => {
         if (filter === 'all') {
           s.mesh.visible = true;
-        } else if (filter === 'starlink') {
-          s.mesh.visible = s.type === 'starlink';
-        } else if (filter === 'gps') {
-          s.mesh.visible = s.type === 'gps';
+        } else if (filter === 'gnss' || filter === 'gps') {
+          s.mesh.visible = s.type === 'gnss';
+        } else if (filter === 'circular' || filter === 'starlink') {
+          s.mesh.visible = s.type === 'circular';
+        } else if (filter === 'meo') {
+          s.mesh.visible = s.type === 'meo';
+        } else if (filter === 'retrograde' || filter === 'polar') {
+          s.mesh.visible = s.type === 'retrograde';
         }
       });
     }
 
     if (this.orbitLinesGroup) {
       this.orbitLinesGroup.children.forEach(l => {
+        const c = l.userData && l.userData.constellation;
         if (filter === 'all') {
           l.visible = this.showOrbits;
-        } else if (filter === 'starlink') {
-          l.visible = this.showOrbits && l.userData.constellation === 'starlink';
-        } else if (filter === 'gps') {
-          l.visible = this.showOrbits && l.userData.constellation === 'gps';
+        } else if (filter === 'gnss' || filter === 'gps') {
+          l.visible = this.showOrbits && c === 'gnss';
+        } else if (filter === 'circular' || filter === 'starlink') {
+          l.visible = this.showOrbits && c === 'circular';
+        } else if (filter === 'meo') {
+          l.visible = this.showOrbits && c === 'meo';
+        } else if (filter === 'retrograde' || filter === 'polar') {
+          l.visible = this.showOrbits && c === 'retrograde';
         }
       });
     }
@@ -1460,6 +1495,11 @@ const Globe3D = {
     if (this.renderer) {
       this.renderer.setClearColor(0x020306, 1);
     }
+
+    const btnTactical = document.getElementById('btn-hud-mode-tactical');
+    const btnReal = document.getElementById('btn-hud-mode-real');
+    if (btnTactical) btnTactical.classList.toggle('active', !isRealistic);
+    if (btnReal) btnReal.classList.toggle('active', isRealistic);
 
     const btnText = document.getElementById('globe-style-btn-text');
     if (btnText) {
@@ -4868,6 +4908,34 @@ function initSatellitemapComponents() {
     };
   }
 }
+
+// --- AITUE Global Network Telemetry & HUD Helpers ---
+window.filterAitueNetwork = function(type) {
+  playTacticalClick();
+  if (typeof Globe3D !== 'undefined' && Globe3D.filterSatellites) {
+    Globe3D.filterSatellites(type);
+  }
+  const notifMap = {
+    all: '🌐 Red Global AITUE Completa: 79 nodos satelitales en enlace activo',
+    gnss: '🟡 Constelación GNSS Activa: 42 satélites para rastreo vehicular y flotas ULTRA+',
+    circular: '🟢 Enlace Starlink LEO Activo: 27 satélites de videovigilancia y datos alta velocidad',
+    meo: '🔵 Relevo MEO Industrial: 9 satélites para centros operativos y bases remotas',
+    retrograde: '🟣 Órbita Polar Activa: 1 satélite para cobertura en pasos australes y alta mar'
+  };
+  showNotification(notifMap[type] || 'Filtro de red satelital actualizado', 'info');
+};
+
+window.setGlobeModeExplicit = function(mode) {
+  playTacticalClick();
+  if (typeof Globe3D !== 'undefined' && Globe3D.applyGlobeTexture) {
+    Globe3D.applyGlobeTexture(mode);
+  }
+  const isReal = mode === 'light';
+  showNotification(
+    isReal ? '🌍 Modo Tierra Real activado: Vista fotográfica desde el espacio con fondo oscuro' : '🌌 Modo Táctico AITUE activado: Visualización geoestratégica con fronteras cian',
+    'info'
+  );
+};
 
 // --- Main Init ---
 window.addEventListener('DOMContentLoaded', () => {
