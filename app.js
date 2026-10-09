@@ -467,25 +467,6 @@ function createProceduralEarthTexture(mode = 'dark') {
       });
       ctx.stroke();
     }
-
-    // 4. Bandas de Nubes Atmosféricas Realistas (Translúcidas, suaves, fotográficas)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
-    const cloudBands = [
-      { yRatio: 0.48, h: 35 },
-      { yRatio: 0.24, h: 48 },
-      { yRatio: 0.76, h: 52 }
-    ];
-    cloudBands.forEach(band => {
-      const centerY = band.yRatio * height;
-      for (let i = 0; i < width; i += 18) {
-        const offset = Math.sin(i * 0.015) * 22 + Math.sin(i * 0.04) * 10;
-        const radius = (band.h + Math.sin(i * 0.02) * 14) * 0.5;
-        ctx.beginPath();
-        ctx.arc(i, centerY + offset, radius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    });
-
   } else {
     // ==========================================
     // MODO TÁCTICO AITUE (CYBER GEOPOLÍTICO OSCURO)
@@ -623,6 +604,76 @@ function createProceduralEarthTexture(mode = 'dark') {
   return texture;
 }
 
+// Genera capa de fronteras vectoriales tácticas delgadas y translúcidas sobrepuesta en 3D
+function createTacticalBordersOverlayTexture() {
+  const width = 4096;
+  const height = 2048;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, width, height);
+
+  const countryFeatures = (window.WORLD_DATA && window.WORLD_DATA.countries) ||
+                          (window.WORLD_GEOJSON && window.WORLD_GEOJSON.features) || [];
+
+  function toCanvas(lon, lat) {
+    return [
+      ((lon + 180) / 360) * width,
+      ((90 - lat) / 180) * height
+    ];
+  }
+
+  if (countryFeatures.length > 0) {
+    // Líneas Geopolíticas Delicadas: Estilo satélite militar / HUD orbital NASA
+    ctx.strokeStyle = 'rgba(180, 225, 255, 0.40)';
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    countryFeatures.forEach(feature => {
+      const geom = feature.geometry || feature;
+      if (!geom) return;
+
+      const traceRings = (rings) => {
+        rings.forEach(ring => {
+          if (ring.length < 2) return;
+          const [sx, sy] = toCanvas(ring[0][0], ring[0][1]);
+          ctx.moveTo(sx, sy);
+          for (let i = 1; i < ring.length; i++) {
+            const [px, py] = toCanvas(ring[i][0], ring[i][1]);
+            ctx.lineTo(px, py);
+          }
+        });
+      };
+
+      if (geom.type === 'Polygon') traceRings(geom.coordinates);
+      else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(poly => traceRings(poly));
+    });
+    ctx.stroke();
+
+    // Líneas Provinciales y Regionales
+    const provinceLines = (window.WORLD_DATA && window.WORLD_DATA.provinces) || [];
+    if (provinceLines.length > 0) {
+      ctx.strokeStyle = 'rgba(120, 190, 255, 0.22)';
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      provinceLines.forEach(line => {
+        if (line.length < 2) return;
+        const [sx, sy] = toCanvas(line[0][0], line[0][1]);
+        ctx.moveTo(sx, sy);
+        for (let i = 1; i < line.length; i++) {
+          const [px, py] = toCanvas(line[i][0], line[i][1]);
+          ctx.lineTo(px, py);
+        }
+      });
+      ctx.stroke();
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.anisotropy = 8;
+  return texture;
+}
+
 const Globe3D = {
   scene: null,
   camera: null,
@@ -649,6 +700,44 @@ const Globe3D = {
   isInitialized: false,
   globeTextureMode: 'dark',
   cachedTextures: {},
+  nasaTextures: null,
+  cloudsMesh: null,
+  bordersMesh: null,
+
+  loadNasaTextures() {
+    if (this.nasaTextures) return;
+    const loader = new THREE.TextureLoader();
+    this.nasaTextures = {
+      map: loader.load('assets/textures/earth_atmos_2048.jpg', (tex) => {
+        tex.anisotropy = 8;
+        if (this.globeTextureMode === 'light' && this.earthMesh) {
+          this.earthMesh.material.map = tex;
+          this.earthMesh.material.needsUpdate = true;
+        }
+      }),
+      specularMap: loader.load('assets/textures/earth_specular_2048.jpg', (tex) => {
+        tex.anisotropy = 8;
+        if (this.globeTextureMode === 'light' && this.earthMesh) {
+          this.earthMesh.material.specularMap = tex;
+          this.earthMesh.material.needsUpdate = true;
+        }
+      }),
+      normalMap: loader.load('assets/textures/earth_normal_2048.jpg', (tex) => {
+        tex.anisotropy = 8;
+        if (this.globeTextureMode === 'light' && this.earthMesh) {
+          this.earthMesh.material.normalMap = tex;
+          this.earthMesh.material.needsUpdate = true;
+        }
+      }),
+      cloudsMap: loader.load('assets/textures/earth_clouds_1024.png', (tex) => {
+        tex.anisotropy = 8;
+        if (this.cloudsMesh) {
+          this.cloudsMesh.material.map = tex;
+          this.cloudsMesh.material.needsUpdate = true;
+        }
+      })
+    };
+  },
 
   init() {
     const container = document.getElementById('globe-3d-container');
@@ -679,12 +768,15 @@ const Globe3D = {
     container.innerHTML = '';
     container.appendChild(this.renderer.domElement);
 
-    // Pre-cache dark and light textures procedurally (100% offline, zero network lag)
+    // Pre-cargar texturas fotorealistas de la NASA (100% offline en local)
+    this.loadNasaTextures();
+
+    // Pre-cache textura táctica procedural y capa de fronteras finas
     if (!this.cachedTextures['dark']) {
       this.cachedTextures['dark'] = createProceduralEarthTexture('dark');
     }
-    if (!this.cachedTextures['light']) {
-      this.cachedTextures['light'] = createProceduralEarthTexture('light');
+    if (!this.cachedTextures['borders']) {
+      this.cachedTextures['borders'] = createTacticalBordersOverlayTexture();
     }
 
     const isCurrentLight = document.getElementById('app-body')?.classList.contains('light-theme');
@@ -755,27 +847,55 @@ const Globe3D = {
     const starsMat = new THREE.PointsMaterial({ size: 1.0, vertexColors: true, transparent: true, opacity: 0.65 });
     this.scene.add(new THREE.Points(starsGeo, starsMat));
 
-    // 5. Earth Sphere (AITUE Deep Navy & Country Political Boundaries)
+    // 5. Earth Sphere (NASA Blue Marble Satellite Photorealism / Modo Táctico AITUE)
     const earthGeo = new THREE.SphereGeometry(5.0, 64, 64);
-    const initialTexture = isCurrentLight ? this.cachedTextures['light'] : this.cachedTextures['dark'];
+    const initialMap = isCurrentLight && this.nasaTextures ? this.nasaTextures.map : this.cachedTextures['dark'];
     const earthMat = new THREE.MeshPhongMaterial({
-      map: initialTexture,
-      shininess: isCurrentLight ? 6 : 3,
-      specular: new THREE.Color(isCurrentLight ? 0x163a65 : 0x050e18)
+      map: initialMap,
+      specularMap: isCurrentLight && this.nasaTextures ? this.nasaTextures.specularMap : null,
+      normalMap: isCurrentLight && this.nasaTextures ? this.nasaTextures.normalMap : null,
+      normalScale: new THREE.Vector2(0.85, 0.85),
+      shininess: isCurrentLight ? 22 : 3,
+      specular: new THREE.Color(isCurrentLight ? 0x336699 : 0x050e18)
     });
     this.earthMesh = new THREE.Mesh(earthGeo, earthMat);
     this.scene.add(this.earthMesh);
 
-    // 6. Clean Sphere Silhouette (matching reference - no overpowering cyan halo)
-    const atmosGeo = new THREE.SphereGeometry(5.035, 64, 64);
-    const atmosMat = new THREE.MeshBasicMaterial({
-      color: 0x07111F,
+    // 5b. Capa de Fronteras Vectoriales Tácticas (Finas líneas translúcidas para ubicación geopolítica)
+    const bordersGeo = new THREE.SphereGeometry(5.006, 64, 64);
+    const bordersMat = new THREE.MeshBasicMaterial({
+      map: this.cachedTextures['borders'],
       transparent: true,
-      opacity: 0.0,
+      opacity: 0.85,
+      depthWrite: false
+    });
+    this.bordersMesh = new THREE.Mesh(bordersGeo, bordersMat);
+    this.bordersMesh.visible = isCurrentLight;
+    this.scene.add(this.bordersMesh);
+
+    // 5c. Capa de Nubes Atmosféricas Dinámicas (Nubes satelitales auténticas NASA flotando sobre la Tierra)
+    const cloudsGeo = new THREE.SphereGeometry(5.025, 64, 64);
+    const cloudsMat = new THREE.MeshPhongMaterial({
+      map: this.nasaTextures ? this.nasaTextures.cloudsMap : null,
+      transparent: true,
+      opacity: 0.82,
+      depthWrite: false,
+      blending: THREE.NormalBlending
+    });
+    this.cloudsMesh = new THREE.Mesh(cloudsGeo, cloudsMat);
+    this.cloudsMesh.visible = isCurrentLight;
+    this.scene.add(this.cloudsMesh);
+
+    // 6. Halo Atmosférico Rayleigh (Resplandor azul en la curvatura del horizonte estilo órbita ISS)
+    const atmosGeo = new THREE.SphereGeometry(5.12, 64, 64);
+    const atmosMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: isCurrentLight ? 0.20 : 0.0,
       side: THREE.BackSide
     });
     this.atmosphereMesh = new THREE.Mesh(atmosGeo, atmosMat);
-    this.atmosphereMesh.visible = false;
+    this.atmosphereMesh.visible = isCurrentLight;
     this.scene.add(this.atmosphereMesh);
 
     // 7. Minimal Clean Tactical Beacons (Delicate 1px glowing surface rings only)
@@ -995,6 +1115,11 @@ const Globe3D = {
 
     if (this.controls) {
       this.controls.update();
+    }
+
+    // Rotación atmosférica continua de nubes reales NASA
+    if (this.cloudsMesh && this.cloudsMesh.visible) {
+      this.cloudsMesh.rotation.y += 0.00030;
     }
 
     // Pulse beacon rings
@@ -1464,31 +1589,65 @@ const Globe3D = {
     const isRealistic = mode === 'light' || mode === 'earth' || mode === 'realistic';
     this.globeTextureMode = isRealistic ? 'light' : 'dark';
 
+    if (!this.nasaTextures) {
+      this.loadNasaTextures();
+    }
+
     if (!this.cachedTextures['dark']) {
       this.cachedTextures['dark'] = createProceduralEarthTexture('dark');
     }
-    if (!this.cachedTextures['light']) {
-      this.cachedTextures['light'] = createProceduralEarthTexture('light');
+    if (!this.cachedTextures['borders']) {
+      this.cachedTextures['borders'] = createTacticalBordersOverlayTexture();
     }
 
-    const targetTex = isRealistic ? this.cachedTextures['light'] : this.cachedTextures['dark'];
-    if (this.earthMesh && targetTex) {
-      this.earthMesh.material.map = targetTex;
-      this.earthMesh.material.specular = new THREE.Color(isRealistic ? 0x163a65 : 0x050e18);
-      this.earthMesh.material.shininess = isRealistic ? 6 : 3;
+    if (this.earthMesh) {
+      if (isRealistic) {
+        if (this.nasaTextures && this.nasaTextures.map) {
+          this.earthMesh.material.map = this.nasaTextures.map;
+          this.earthMesh.material.specularMap = this.nasaTextures.specularMap;
+          this.earthMesh.material.normalMap = this.nasaTextures.normalMap;
+          this.earthMesh.material.normalScale = new THREE.Vector2(0.85, 0.85);
+        }
+        this.earthMesh.material.specular = new THREE.Color(0x336699);
+        this.earthMesh.material.shininess = 22;
+      } else {
+        this.earthMesh.material.map = this.cachedTextures['dark'];
+        this.earthMesh.material.specularMap = null;
+        this.earthMesh.material.normalMap = null;
+        this.earthMesh.material.specular = new THREE.Color(0x050e18);
+        this.earthMesh.material.shininess = 3;
+      }
       this.earthMesh.material.needsUpdate = true;
+    }
+
+    if (this.cloudsMesh) {
+      this.cloudsMesh.visible = isRealistic;
+    }
+
+    if (this.bordersMesh) {
+      this.bordersMesh.visible = isRealistic;
     }
 
     if (this.atmosphereMesh) {
       if (isRealistic) {
         this.atmosphereMesh.visible = true;
-        this.atmosphereMesh.material.color.setHex(0x3892f0);
-        this.atmosphereMesh.material.opacity = 0.16;
+        this.atmosphereMesh.material.color.setHex(0x38bdf8);
+        this.atmosphereMesh.material.opacity = 0.20;
       } else {
         this.atmosphereMesh.visible = false;
         this.atmosphereMesh.material.opacity = 0.0;
       }
       this.atmosphereMesh.material.needsUpdate = true;
+    }
+
+    if (this.cameraHeadlight) {
+      if (isRealistic) {
+        this.cameraHeadlight.color.setHex(0xffffff);
+        this.cameraHeadlight.intensity = 0.14;
+      } else {
+        this.cameraHeadlight.color.setHex(0x2F7BFF);
+        this.cameraHeadlight.intensity = 0.22;
+      }
     }
 
     // El fondo espacial del globo 3D SIEMPRE permanece en negro profundo con estrellas
@@ -1503,7 +1662,7 @@ const Globe3D = {
 
     const btnText = document.getElementById('globe-style-btn-text');
     if (btnText) {
-      btnText.innerText = isRealistic ? '3D Tierra Real' : '3D Táctico AITUE';
+      btnText.innerText = isRealistic ? '3D Tierra Real (NASA)' : '3D Táctico AITUE';
     }
   },
 
