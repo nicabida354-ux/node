@@ -230,21 +230,23 @@ let currentTileLayer = null;
 let currentTileRefLayer = null;
 let currentTileMode = 'dark'; // 'dark' (default cyber dark tactical) | 'sat' | 'googleStreet' | 'street'
 
-// Verified High-Tech Tile Sources (100% Free, Zero API Keys, Zero Watermarks, Worldwide)
+// Verified High-Tech Tile Sources (100% Free, Zero API Keys, Zero Watermarks, Worldwide, Up to Zoom 20)
 const TILE_CONFIG = {
-  // 1. Tactical Cyber Dark (Esri World Dark Gray Canvas: 100% Free, No Watermark, No API Key, Clean Slate Base & Reference Labels)
+  // 1. Tactical Cyber Dark (CartoDB Dark Matter: High-Res streets, avenues and building outlines up to zoom 20 with zero missing tile errors)
   dark: {
+    name: '3D Cyber Oscuro HD (CartoDB)',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    maxZoom: 20,
+    maxNativeZoom: 19,
+    subdomains: 'abcd'
+  },
+  // 2. Esri World Dark Gray Canvas (with maxNativeZoom: 16 so Leaflet smoothly upscales and NEVER shows "Map data not yet available")
+  esriDark: {
     name: '3D Oscuro Gris Táctico (Esri Canvas)',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
     refUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
-    maxZoom: 19,
-    subdomains: 'abc'
-  },
-  // 2. Google / Esri Street Navigation: Full color streets, avenues, borders, cities worldwide
-  googleStreet: {
-    name: 'Callejero Claro Global',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-    maxZoom: 19,
+    maxZoom: 20,
+    maxNativeZoom: 16,
     subdomains: 'abc'
   },
   // 3. High-Res Satellite HD (Esri World Imagery + Boundaries/Places Reference)
@@ -252,14 +254,24 @@ const TILE_CONFIG = {
     name: '3D Vista Satelital HD (Esri World Imagery)',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     refUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-    maxZoom: 19,
+    maxZoom: 20,
+    maxNativeZoom: 18,
     subdomains: 'abc'
   },
-  // 4. OpenStreetMap: Open Global Street Grid
+  // 4. Google / Esri Street Navigation: Full color streets, avenues, borders, cities worldwide
+  googleStreet: {
+    name: 'Callejero Claro Global (Google/Esri Street)',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    maxZoom: 20,
+    maxNativeZoom: 18,
+    subdomains: 'abc'
+  },
+  // 5. OpenStreetMap: Open Global Street Grid
   street: {
     name: 'OpenStreetMap Mundial',
     url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    maxZoom: 19,
+    maxZoom: 20,
+    maxNativeZoom: 19,
     subdomains: 'abc'
   }
 };
@@ -332,141 +344,283 @@ function getClosestCountry(lat, lng) {
   };
 }
 
-function createProceduralEarthTexture() {
+function createProceduralEarthTexture(mode = 'dark') {
+  const isRealistic = mode === 'light' || mode === 'earth' || mode === 'realistic';
+  const width = 4096;
+  const height = 2048;
   const canvas = document.createElement('canvas');
-  canvas.width = 2048;
-  canvas.height = 1024;
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext('2d');
 
-  // Deep space ocean gradient
-  const oceanGrad = ctx.createLinearGradient(0, 0, 0, 1024);
-  oceanGrad.addColorStop(0, '#040d21');
-  oceanGrad.addColorStop(0.5, '#020612');
-  oceanGrad.addColorStop(1, '#040d21');
-  ctx.fillStyle = oceanGrad;
-  ctx.fillRect(0, 0, 2048, 1024);
-
-  // Subtle Lat/Lon tactical grid lines
-  ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
-  ctx.lineWidth = 1;
-  for (let lat = -80; lat <= 80; lat += 20) {
-    const y = ((90 - lat) / 180) * 1024;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(2048, y);
-    ctx.stroke();
-  }
-  for (let lon = -180; lon <= 180; lon += 30) {
-    const x = ((lon + 180) / 360) * 2048;
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, 1024);
-    ctx.stroke();
+  function toCanvas(lon, lat) {
+    return [
+      ((lon + 180) / 360) * width,
+      ((90 - lat) / 180) * height
+    ];
   }
 
-  // Equator & Prime Meridian in cyan
-  ctx.strokeStyle = 'rgba(0, 240, 255, 0.22)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, 512);
-  ctx.lineTo(2048, 512);
-  ctx.stroke();
+  const countryFeatures = (window.WORLD_DATA && window.WORLD_DATA.countries) ||
+                          (window.WORLD_GEOJSON && window.WORLD_GEOJSON.features) || [];
 
-  // Helper to project lat/lon to canvas
-  function toCanvas(lat, lon) {
-    return [((lon + 180) / 360) * 2048, ((90 - lat) / 180) * 1024];
-  }
+  if (isRealistic) {
+    // ==========================================
+    // MODO TIERRA REAL (VISTA SATELITAL DESDE EL ESPACIO)
+    // Océanos profundos, biomas naturales (desiertos, selvas, hielos) y nubes
+    // ==========================================
 
-  function drawContinent(pts, fillColor = '#09152b', strokeColor = '#00f0ff') {
-    if (pts.length < 3) return;
-    ctx.beginPath();
-    const [startX, startY] = toCanvas(pts[0][0], pts[0][1]);
-    ctx.moveTo(startX, startY);
-    for (let i = 1; i < pts.length; i++) {
-      const [px, py] = toCanvas(pts[i][0], pts[i][1]);
-      ctx.lineTo(px, py);
+    // 1. Océanos Reales (Azul profundo con gradiente polar y ecuatorial)
+    const oceanGrad = ctx.createLinearGradient(0, 0, 0, height);
+    oceanGrad.addColorStop(0.0, '#0a2342'); // Glaciar ártico
+    oceanGrad.addColorStop(0.2, '#0c2d52');
+    oceanGrad.addColorStop(0.5, '#123e72'); // Océano ecuatorial profundo
+    oceanGrad.addColorStop(0.8, '#0c2d52');
+    oceanGrad.addColorStop(1.0, '#0a2342'); // Glaciar antártico
+    ctx.fillStyle = oceanGrad;
+    ctx.fillRect(0, 0, width, height);
+
+    // 2. Continentes con Biomas Naturales Auténticos
+    function getBiomeColor(polyCoords) {
+      let sumX = 0, sumY = 0, count = 0;
+      const ring = polyCoords[0] || polyCoords;
+      const step = Math.max(1, Math.floor(ring.length / 8));
+      for (let i = 0; i < ring.length; i += step) {
+        sumX += ring[i][0];
+        sumY += ring[i][1];
+        count++;
+      }
+      const lon = count > 0 ? sumX / count : 0;
+      const lat = count > 0 ? sumY / count : 0;
+
+      // Hielos y casquetes polares
+      if (lat < -58) return '#eaf2fa'; // Antártida (Nieve)
+      if (lat > 63 && lon > -55 && lon < -15) return '#e2edf8'; // Groenlandia
+
+      // Zonas Desérticas y Áridas (Sahara, Arabia, Australia Outback, Atacama)
+      if (lat > 12 && lat < 33 && lon > -18 && lon < 38) return '#a98a58'; // Sahara
+      if (lat > 12 && lat < 34 && lon >= 38 && lon < 62) return '#b2925f'; // Arabia
+      if (lat > -32 && lat < -18 && lon > 115 && lon < 145) return '#a46f48'; // Outback
+      if (lat > -26 && lat < -16 && lon > -72 && lon < -67) return '#997f56'; // Atacama
+      if (lat > 28 && lat < 45 && lon > -118 && lon < -104) return '#8c764e'; // Gran Desierto Americano
+
+      // Selvas Tropicales Húmedas
+      if (lat > -15 && lat < 5 && lon > -75 && lon < -45) return '#1d421a'; // Amazonas
+      if (lat > -8 && lat < 6 && lon > 10 && lon < 30) return '#20461c'; // Congo
+      if (lat > -10 && lat < 18 && lon > 95 && lon < 140) return '#22481e'; // Sudeste Asiático
+
+      // Regiones Subárticas / Taiga Boreal
+      if (lat > 56) return '#3d523a';
+
+      // Zonas Templadas y Praderas (Argentina/Pampas, Europa, EE.UU., Asia Oriental)
+      if (lat < -28 && lat > -48 && lon > -72 && lon < -54) return '#385e30'; // Pampas argentinas
+      return '#345c2d'; // Vegetación templada general
     }
-    ctx.closePath();
-    ctx.fillStyle = fillColor;
-    ctx.fill();
-    ctx.strokeStyle = strokeColor;
-    ctx.lineWidth = 1.8;
+
+    if (countryFeatures.length > 0) {
+      countryFeatures.forEach(feature => {
+        const geom = feature.geometry || feature;
+        if (!geom) return;
+
+        const fillPoly = (coords) => {
+          ctx.fillStyle = getBiomeColor(coords);
+          ctx.beginPath();
+          const ring = coords[0] || coords;
+          if (ring.length < 2) return;
+          const [sx, sy] = toCanvas(ring[0][0], ring[0][1]);
+          ctx.moveTo(sx, sy);
+          for (let i = 1; i < ring.length; i++) {
+            const [px, py] = toCanvas(ring[i][0], ring[i][1]);
+            ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.fill();
+        };
+
+        if (geom.type === 'Polygon') {
+          fillPoly(geom.coordinates);
+        } else if (geom.type === 'MultiPolygon') {
+          geom.coordinates.forEach(poly => fillPoly(poly));
+        }
+      });
+
+      // 3. Fronteras Tácticas Delicadas (Líneas finas blancas translúcidas estilo satelital)
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.32)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      countryFeatures.forEach(feature => {
+        const geom = feature.geometry || feature;
+        if (!geom) return;
+
+        const trace = (coords) => {
+          const ring = coords[0] || coords;
+          if (ring.length < 2) return;
+          const [sx, sy] = toCanvas(ring[0][0], ring[0][1]);
+          ctx.moveTo(sx, sy);
+          for (let i = 1; i < ring.length; i++) {
+            const [px, py] = toCanvas(ring[i][0], ring[i][1]);
+            ctx.lineTo(px, py);
+          }
+        };
+
+        if (geom.type === 'Polygon') trace(geom.coordinates);
+        else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(poly => trace(poly));
+      });
+      ctx.stroke();
+    }
+
+    // 4. Bandas de Nubes Atmosféricas Realistas (Translúcidas, suaves, fotográficas)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+    const cloudBands = [
+      { yRatio: 0.48, h: 35 },
+      { yRatio: 0.24, h: 48 },
+      { yRatio: 0.76, h: 52 }
+    ];
+    cloudBands.forEach(band => {
+      const centerY = band.yRatio * height;
+      for (let i = 0; i < width; i += 18) {
+        const offset = Math.sin(i * 0.015) * 22 + Math.sin(i * 0.04) * 10;
+        const radius = (band.h + Math.sin(i * 0.02) * 14) * 0.5;
+        ctx.beginPath();
+        ctx.arc(i, centerY + offset, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+  } else {
+    // ==========================================
+    // MODO TÁCTICO AITUE (CYBER GEOPOLÍTICO OSCURO)
+    // Paleta de referencia: Azul grafito, Océano profundo, Azul eléctrico y Graticule cobrizo
+    // ==========================================
+
+    // 1. Océano Profundo AITUE
+    const oceanGrad = ctx.createLinearGradient(0, 0, 0, height);
+    oceanGrad.addColorStop(0.0, '#030810');
+    oceanGrad.addColorStop(0.3, '#050f1c');
+    oceanGrad.addColorStop(0.5, '#081424');
+    oceanGrad.addColorStop(0.7, '#050f1c');
+    oceanGrad.addColorStop(1.0, '#030810');
+    ctx.fillStyle = oceanGrad;
+    ctx.fillRect(0, 0, width, height);
+
+    // 2. Continentes en Azul Grafito (#0c1827)
+    ctx.fillStyle = '#0c1827';
+    if (countryFeatures.length > 0) {
+      countryFeatures.forEach(feature => {
+        const geom = feature.geometry || feature;
+        if (!geom) return;
+
+        const fillRings = (rings) => {
+          ctx.beginPath();
+          rings.forEach(ring => {
+            if (ring.length < 2) return;
+            const [sx, sy] = toCanvas(ring[0][0], ring[0][1]);
+            ctx.moveTo(sx, sy);
+            for (let i = 1; i < ring.length; i++) {
+              const [px, py] = toCanvas(ring[i][0], ring[i][1]);
+              ctx.lineTo(px, py);
+            }
+          });
+          ctx.closePath();
+          ctx.fill();
+        };
+
+        if (geom.type === 'Polygon') fillRings(geom.coordinates);
+        else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(poly => fillRings(poly));
+      });
+
+      // 3. Líneas Provinciales y Regionales Internas (Delicadas y limpias)
+      const provinceLines = (window.WORLD_DATA && window.WORLD_DATA.provinces) || [];
+      if (provinceLines.length > 0) {
+        ctx.strokeStyle = 'rgba(47, 123, 255, 0.22)';
+        ctx.lineWidth = 0.55;
+        ctx.beginPath();
+        provinceLines.forEach(line => {
+          if (line.length < 2) return;
+          const [sx, sy] = toCanvas(line[0][0], line[0][1]);
+          ctx.moveTo(sx, sy);
+          for (let i = 1; i < line.length; i++) {
+            const [px, py] = toCanvas(line[i][0], line[i][1]);
+            ctx.lineTo(px, py);
+          }
+        });
+        ctx.stroke();
+      }
+
+      // 4. Fronteras Nacionales Soberanas (Azul Eléctrico AITUE limpio)
+      ctx.strokeStyle = 'rgba(47, 123, 255, 0.70)';
+      ctx.lineWidth = 0.95;
+      ctx.beginPath();
+      countryFeatures.forEach(feature => {
+        const geom = feature.geometry || feature;
+        if (!geom) return;
+
+        const traceRings = (rings) => {
+          rings.forEach(ring => {
+            if (ring.length < 2) return;
+            const [sx, sy] = toCanvas(ring[0][0], ring[0][1]);
+            ctx.moveTo(sx, sy);
+            for (let i = 1; i < ring.length; i++) {
+              const [px, py] = toCanvas(ring[i][0], ring[i][1]);
+              ctx.lineTo(px, py);
+            }
+          });
+        };
+
+        if (geom.type === 'Polygon') traceRings(geom.coordinates);
+        else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(poly => traceRings(poly));
+      });
+      ctx.stroke();
+    }
+
+    // 5. Cuadrícula de Coordenadas Táctica (Graticule Grid Cobrizo Táctico)
+    ctx.strokeStyle = 'rgba(168, 79, 58, 0.32)';
+    ctx.lineWidth = 0.85;
+
+    // Paralelos de -75° a +75° cada 15°
+    for (let lat = -75; lat <= 75; lat += 15) {
+      const y = ((90 - lat) / 180) * height;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+
+    // Meridianos de -180° a +180° cada 15°
+    for (let lon = -180; lon <= 180; lon += 15) {
+      const x = ((lon + 180) / 360) * width;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+
+    // Líneas Principales: Ecuador y Greenwich
+    ctx.strokeStyle = 'rgba(205, 95, 75, 0.55)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(0, height / 2);
+    ctx.lineTo(width, height / 2);
     ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(width / 2, 0);
+    ctx.lineTo(width / 2, height);
+    ctx.stroke();
+
+    // Círculos Polares
+    ctx.strokeStyle = 'rgba(168, 79, 58, 0.30)';
+    ctx.lineWidth = 0.85;
+    [-80, -66.5, 66.5, 80].forEach(pLat => {
+      const py = ((90 - pLat) / 180) * height;
+      ctx.beginPath();
+      ctx.moveTo(0, py);
+      ctx.lineTo(width, py);
+      ctx.stroke();
+    });
   }
 
-  // Major continental outlines
-  // South America
-  drawContinent([
-    [12, -72], [10, -60], [5, -52], [-5, -35], [-12, -37], [-23, -42],
-    [-34, -58], [-42, -63], [-54, -68], [-55, -73], [-45, -75],
-    [-20, -70], [-5, -81], [5, -77], [12, -72]
-  ], '#0d223f', '#00ffa3');
-
-  // North America
-  drawContinent([
-    [15, -92], [24, -80], [30, -81], [35, -75], [44, -64], [52, -55],
-    [64, -64], [72, -75], [72, -125], [65, -165], [58, -160], [52, -128],
-    [34, -120], [22, -105], [15, -92]
-  ]);
-
-  // Europe
-  drawContinent([
-    [36, -9], [43, -9], [44, 0], [50, 1], [58, 5], [63, 10], [71, 28],
-    [60, 30], [45, 35], [40, 26], [38, 23], [36, -5], [36, -9]
-  ]);
-
-  // Africa
-  drawContinent([
-    [36, -5], [37, 10], [32, 32], [12, 44], [12, 51], [-12, 40], [-26, 33],
-    [-34, 18], [-33, 27], [-15, 12], [5, 2], [5, -4], [15, -17], [28, -13], [36, -5]
-  ]);
-
-  // Asia
-  drawContinent([
-    [42, 28], [60, 30], [70, 40], [75, 100], [72, 175], [60, 162],
-    [40, 130], [30, 122], [22, 114], [10, 105], [1, 104], [15, 80],
-    [25, 65], [25, 55], [30, 48], [35, 36], [42, 28]
-  ]);
-
-  // Australia
-  drawContinent([
-    [-12, 132], [-11, 142], [-22, 150], [-33, 152], [-38, 145],
-    [-35, 117], [-22, 114], [-15, 124], [-12, 132]
-  ]);
-
-  // City Lights Glow Points
-  const cities = [
-    { lat: -34.6037, lng: -58.3816, name: 'Buenos Aires', highlight: true },
-    { lat: -23.5505, lng: -46.6333, name: 'São Paulo' },
-    { lat: -33.4489, lng: -70.6693, name: 'Santiago' },
-    { lat: 40.7128, lng: -74.0060, name: 'New York' },
-    { lat: 34.0522, lng: -118.2437, name: 'Los Angeles' },
-    { lat: 51.5074, lng: -0.1278, name: 'London' },
-    { lat: 48.8566, lng: 2.3522, name: 'Paris' },
-    { lat: 35.6762, lng: 139.6503, name: 'Tokyo' },
-    { lat: 1.3521, lng: 103.8198, name: 'Singapore' }
-  ];
-
-  cities.forEach(city => {
-    const [cx, cy] = toCanvas(city.lat, city.lng);
-    const rad = city.highlight ? 16 : 8;
-    const radial = ctx.createRadialGradient(cx, cy, 1, cx, cy, rad);
-    if (city.highlight) {
-      radial.addColorStop(0, '#00ffa3');
-      radial.addColorStop(0.3, 'rgba(0, 240, 255, 0.9)');
-      radial.addColorStop(1, 'rgba(0, 240, 255, 0)');
-    } else {
-      radial.addColorStop(0, '#fef08a');
-      radial.addColorStop(0.4, 'rgba(245, 158, 11, 0.6)');
-      radial.addColorStop(1, 'rgba(245, 158, 11, 0)');
-    }
-    ctx.fillStyle = radial;
-    ctx.beginPath();
-    ctx.arc(cx, cy, rad, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  return new THREE.CanvasTexture(canvas);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.anisotropy = 8;
+  return texture;
 }
 
 const Globe3D = {
@@ -500,76 +654,87 @@ const Globe3D = {
     const container = document.getElementById('globe-3d-container');
     if (!container || this.isInitialized) return;
 
-    const width = container.clientWidth || window.innerWidth;
-    const height = container.clientHeight || (window.innerHeight - 96);
+    const rect = container.getBoundingClientRect();
+    const width = Math.round(rect.width || container.clientWidth || window.innerWidth);
+    const height = Math.round(rect.height || container.clientHeight || (window.innerHeight - 52));
+    const aspect = width / height;
 
     // 1. Scene & Camera
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    // Position camera facing South America / Argentina
-    this.camera.position.set(2.8, 1.4, 11.2);
+    this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+    if (aspect < 1.0) {
+      this.camera.fov = Math.min(65, 45 / Math.max(0.65, aspect));
+      this.camera.updateProjectionMatrix();
+    }
+    // Position camera facing Atlantic Ocean with full-sphere framing matching AITUE reference
+    const initDist = 14.8;
+    const initDir = new THREE.Vector3(-0.6, 2.6, 13.8).normalize();
+    this.camera.position.copy(initDir.multiplyScalar(initDist));
 
     // 2. WebGL Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-    this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    this.renderer.setClearColor(0x02040a, 1);
+    this.renderer.setSize(width, height, false);
+    this.renderer.setClearColor(0x030508, 1); // Negro profundo AITUE
     container.innerHTML = '';
     container.appendChild(this.renderer.domElement);
 
-    // 3. OrbitControls (Rotational 3D Movement)
+    // Pre-cache dark and light textures procedurally (100% offline, zero network lag)
+    if (!this.cachedTextures['dark']) {
+      this.cachedTextures['dark'] = createProceduralEarthTexture('dark');
+    }
+    if (!this.cachedTextures['light']) {
+      this.cachedTextures['light'] = createProceduralEarthTexture('light');
+    }
+
+    const isCurrentLight = document.getElementById('app-body')?.classList.contains('light-theme');
+    this.globeTextureMode = isCurrentLight ? 'light' : 'dark';
+
+    // 3. OrbitControls (Smooth damping, infinite 360° rotation without lockups or clipping)
     if (typeof THREE.OrbitControls !== 'undefined') {
       this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
       this.controls.enableDamping = true;
-      this.controls.dampingFactor = 0.06;
-      this.controls.enablePan = false; // Strictly anchor orbit target to (0, 0, 0)
-      this.controls.minDistance = 7.0; // Prevent camera from smashing into blurry globe texture
-      this.controls.maxDistance = 24.0;
-      this.controls.autoRotate = true;
-      this.controls.autoRotateSpeed = 0.5;
+      this.controls.dampingFactor = 0.08;
+      this.controls.enablePan = false; // Anchor orbit target to center of Earth (0, 0, 0)
+      this.controls.minDistance = 5.10; // Permite acercamiento fluido para inspeccionar de cerca sin saltos
+      this.controls.maxDistance = 26.0;
+      this.controls.rotateSpeed = 0.75;
+      this.controls.zoomSpeed = 0.75;
+      this.controls.minPolarAngle = 0.05; // Rotación esférica libre y natural
+      this.controls.maxPolarAngle = Math.PI - 0.05;
+      this.controls.autoRotate = false;
+      this.controls.autoRotateSpeed = 0.25;
 
-      // Stop auto-rotate when user drags
+      // Pausar rotación automática al manipular con ratón/touch
       this.controls.addEventListener('start', () => {
         this.controls.autoRotate = false;
       });
 
-      // Check distance for dynamic HUD opacity and automatic descent into surface map
+      // Actualizar coordenadas y detectar aproximación voluntaria a la superficie
       this.controls.addEventListener('change', () => {
         if (state.currentViewMode !== 'globe-3d') return;
-        const dist = this.camera.position.distanceTo(this.controls.target);
+        const dist = this.camera.position.length();
 
-        // Dynamically fade HUD overlay as camera approaches the Earth
-        const globeHUD = document.getElementById('globe-hud-overlay');
-        if (globeHUD) {
-          const hudAlpha = Math.max(0, Math.min(1, (dist - 8.5) / 2.2));
-          globeHUD.style.opacity = hudAlpha.toFixed(2);
-          if (hudAlpha < 0.2) {
-            globeHUD.classList.add('hud-hidden');
-            globeHUD.style.pointerEvents = 'none';
-          } else {
-            globeHUD.classList.remove('hud-hidden');
-            globeHUD.style.pointerEvents = 'auto';
-          }
+        // Solo descender si el usuario hace zoom pasando la atmósfera (< 5.12 unidades)
+        if (dist <= 5.12 && !this.isDescending) {
+          this.checkZoomDescent();
+          return;
         }
 
-        // Automatic descent into surface map when zooming close to Earth
-        if (dist <= 8.6 && !this.isDescending) {
-          const ray = new THREE.Raycaster();
-          ray.setFromCamera(new THREE.Vector2(0, 0), this.camera);
-          const hits = ray.intersectObject(this.earthMesh);
-          if (hits.length > 0) {
-            const coords = vector3ToLatLng(hits[0].point, 5.0);
-            this.descendToCoords(coords.lat, coords.lng);
-          } else {
-            this.descendToCountry(state.selectedCountryCode || 'ARG');
-          }
+        const ray = new THREE.Raycaster();
+        ray.setFromCamera(new THREE.Vector2(0, 0), this.camera);
+        const hits = ray.intersectObject(this.earthMesh);
+        if (hits.length > 0) {
+          const coords = vector3ToLatLng(hits[0].point, 5.0);
+          const c = getClosestCountry(coords.lat, coords.lng);
+          state.selectedCountryCode = c.code || 'ARG';
         }
       });
     }
 
-    // 4. Starfield Space Background
+    // 4. Subtle Starfield Space Background (Negro profundo con micro-estrellas)
     const starsGeo = new THREE.BufferGeometry();
-    const starCount = 1400;
+    const starCount = 1200;
     const starPositions = new Float32Array(starCount * 3);
     const starColors = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount; i++) {
@@ -580,115 +745,67 @@ const Globe3D = {
       starPositions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
       starPositions[i * 3 + 2] = radius * Math.cos(phi);
 
-      const isCyan = Math.random() > 0.7;
-      starColors[i * 3] = isCyan ? 0.0 : 0.9;
-      starColors[i * 3 + 1] = isCyan ? 0.95 : 0.9;
+      const isCyan = Math.random() > 0.85;
+      starColors[i * 3] = isCyan ? 0.0 : 0.95;
+      starColors[i * 3 + 1] = isCyan ? 0.85 : 0.95;
       starColors[i * 3 + 2] = 1.0;
     }
     starsGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
     starsGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
-    const starsMat = new THREE.PointsMaterial({ size: 1.6, vertexColors: true, transparent: true, opacity: 0.85 });
+    const starsMat = new THREE.PointsMaterial({ size: 1.0, vertexColors: true, transparent: true, opacity: 0.65 });
     this.scene.add(new THREE.Points(starsGeo, starsMat));
 
-    // 5. Earth Sphere
+    // 5. Earth Sphere (AITUE Deep Navy & Country Political Boundaries)
     const earthGeo = new THREE.SphereGeometry(5.0, 64, 64);
-    const proceduralTexture = createProceduralEarthTexture();
+    const initialTexture = isCurrentLight ? this.cachedTextures['light'] : this.cachedTextures['dark'];
     const earthMat = new THREE.MeshPhongMaterial({
-      map: proceduralTexture,
-      shininess: 15,
-      specular: new THREE.Color(0x00f0ff)
+      map: initialTexture,
+      shininess: isCurrentLight ? 6 : 3,
+      specular: new THREE.Color(isCurrentLight ? 0x163a65 : 0x050e18)
     });
     this.earthMesh = new THREE.Mesh(earthGeo, earthMat);
     this.scene.add(this.earthMesh);
 
-    // Initial high-tech 3D globe texture load (3D Oscuro Gris Táctico por defecto)
-    this.applyGlobeTexture('dark');
-
-    // 6. Glowing Atmosphere Layer
-    const atmosGeo = new THREE.SphereGeometry(5.09, 64, 64);
+    // 6. Clean Sphere Silhouette (matching reference - no overpowering cyan halo)
+    const atmosGeo = new THREE.SphereGeometry(5.035, 64, 64);
     const atmosMat = new THREE.MeshBasicMaterial({
-      color: 0x00f0ff,
+      color: 0x07111F,
       transparent: true,
-      opacity: 0.16,
-      side: THREE.BackSide,
-      blending: THREE.AdditiveBlending
+      opacity: 0.0,
+      side: THREE.BackSide
     });
     this.atmosphereMesh = new THREE.Mesh(atmosGeo, atmosMat);
+    this.atmosphereMesh.visible = false;
     this.scene.add(this.atmosphereMesh);
 
-    // 7. Multi-Country Global Tactical Beacons
+    // 7. Minimal Clean Tactical Beacons (Delicate 1px glowing surface rings only)
     this.beaconGroup = new THREE.Group();
     this.beaconRings = [];
 
-    const HUB_BEACONS = [
-      { code: 'ARG', name: 'ARGENTINA', lat: -34.6037, lng: -58.3816, flag: '🇦🇷' },
-      { code: 'ESP', name: 'ESPAÑA', lat: 40.4168, lng: -3.7038, flag: '🇪🇸' },
-      { code: 'MEX', name: 'MÉXICO', lat: 19.4326, lng: -99.1332, flag: '🇲🇽' },
-      { code: 'USA', name: 'EE.UU.', lat: 25.7617, lng: -80.1918, flag: '🇺🇸' },
-      { code: 'COL', name: 'COLOMBIA', lat: 4.7110, lng: -74.0721, flag: '🇨🇴' },
-      { code: 'BRA', name: 'BRASIL', lat: -23.5505, lng: -46.6333, flag: '🇧🇷' },
-      { code: 'FRA', name: 'FRANCIA', lat: 48.8566, lng: 2.3522, flag: '🇫🇷' },
-      { code: 'JPN', name: 'JAPÓN', lat: 35.6762, lng: 139.6503, flag: '🇯🇵' }
+    const SUBTLE_HUBS = [
+      { code: 'ARG', lat: -34.6037, lng: -58.3816 },
+      { code: 'ESP', lat: 40.4168, lng: -3.7038 },
+      { code: 'USA', lat: 25.7617, lng: -80.1918 },
+      { code: 'JPN', lat: 35.6762, lng: 139.6503 }
     ];
 
-    HUB_BEACONS.forEach(hub => {
+    SUBTLE_HUBS.forEach(hub => {
       const pos = latLngToVector3(hub.lat, hub.lng, 5.0);
       const normal = pos.clone().normalize();
 
-      // Pin Cylinder
-      const pinGeo = new THREE.CylinderGeometry(0.025, 0.05, 0.45, 12);
-      const pinMat = new THREE.MeshBasicMaterial({ color: 0x00ffa3 });
-      const pin = new THREE.Mesh(pinGeo, pinMat);
-      pin.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
-      pin.position.copy(pos.clone().add(normal.clone().multiplyScalar(0.22)));
-      this.beaconGroup.add(pin);
-
-      // Pulsing Ring on Surface
-      const ringGeo = new THREE.RingGeometry(0.10, 0.28, 32);
+      const ringGeo = new THREE.RingGeometry(0.06, 0.09, 32);
       const ringMat = new THREE.MeshBasicMaterial({
-        color: 0x00f0ff,
+        color: 0x2F7BFF,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.45,
         blending: THREE.AdditiveBlending
       });
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
-      ring.position.copy(pos.clone().add(normal.clone().multiplyScalar(0.03)));
+      ring.position.copy(pos.clone().add(normal.clone().multiplyScalar(0.02)));
       this.beaconGroup.add(ring);
       this.beaconRings.push(ring);
-
-      // Top glowing point
-      const headGeo = new THREE.SphereGeometry(0.08, 12, 12);
-      const headMat = new THREE.MeshBasicMaterial({ color: 0x00ffa3 });
-      const head = new THREE.Mesh(headGeo, headMat);
-      head.position.copy(pos.clone().add(normal.clone().multiplyScalar(0.46)));
-      this.beaconGroup.add(head);
-
-      // Tag Sprite
-      const sCanvas = document.createElement('canvas');
-      sCanvas.width = 384;
-      sCanvas.height = 80;
-      const sCtx = sCanvas.getContext('2d');
-      sCtx.fillStyle = 'rgba(6, 12, 28, 0.88)';
-      sCtx.strokeStyle = '#00f0ff';
-      sCtx.lineWidth = 3;
-      sCtx.roundRect ? sCtx.roundRect(6, 6, 372, 68, 14) : sCtx.rect(6, 6, 372, 68);
-      sCtx.fill();
-      sCtx.stroke();
-      sCtx.fillStyle = '#00ffa3';
-      sCtx.font = 'bold 28px "Space Grotesk", sans-serif';
-      sCtx.fillText(`${hub.flag} ${hub.name}`, 18, 42);
-      sCtx.fillStyle = '#94a3b8';
-      sCtx.font = '16px "JetBrains Mono", monospace';
-      sCtx.fillText('CLIC PARA ENTRAR', 18, 64);
-
-      const sTex = new THREE.CanvasTexture(sCanvas);
-      const spriteMat = new THREE.SpriteMaterial({ map: sTex, transparent: true });
-      const sprite = new THREE.Sprite(spriteMat);
-      sprite.scale.set(1.4, 0.32, 1);
-      sprite.position.copy(pos.clone().add(normal.clone().multiplyScalar(0.85)));
-      this.beaconGroup.add(sprite);
     });
 
     this.scene.add(this.beaconGroup);
@@ -697,12 +814,22 @@ const Globe3D = {
     this.initSatelliteSwarm();
     this.initSatelliteSwarmEvents();
 
-    // 9. Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+    // 9. Lighting (Day/Night terminator with upper-left sun and ambient fill matching reference)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.38);
     this.scene.add(ambientLight);
-    const sunLight = new THREE.DirectionalLight(0x00f0ff, 1.4);
-    sunLight.position.set(12, 8, 10);
+
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.35);
+    sunLight.position.set(-14, 7, 8);
     this.scene.add(sunLight);
+
+    this.cameraHeadlight = new THREE.DirectionalLight(0x2F7BFF, 0.22);
+    this.cameraHeadlight.position.set(0, 0, 10);
+    this.camera.add(this.cameraHeadlight);
+    this.scene.add(this.camera);
+
+    const rimLight = new THREE.DirectionalLight(0x00D9FF, 0.0);
+    rimLight.position.set(12, 10, -10);
+    this.scene.add(rimLight);
 
     // 10. Click Raycaster for Satellites and Earth Descent
     const raycaster = new THREE.Raycaster();
@@ -724,7 +851,7 @@ const Globe3D = {
 
         raycaster.setFromCamera(mouse, this.camera);
 
-        // A. Check if clicked directly on an orbiting satellite
+        // A. Clic sobre un satélite en órbita: Seleccionar e inspeccionar en HUD
         if (this.satelliteSwarmGroup) {
           const satHits = raycaster.intersectObjects(this.satelliteSwarmGroup.children, true);
           if (satHits.length > 0) {
@@ -739,17 +866,41 @@ const Globe3D = {
           }
         }
 
-        // B. Otherwise check if clicked on Earth to descend
+        // B. Clic sobre un pin o baliza táctica de país: Seleccionar país en selector
+        if (this.beaconGroup) {
+          const beaconHits = raycaster.intersectObjects(this.beaconGroup.children, true);
+          if (beaconHits.length > 0) {
+            const hits = raycaster.intersectObject(this.earthMesh);
+            if (hits.length > 0) {
+              const coords = vector3ToLatLng(hits[0].point, 5.0);
+              const c = getClosestCountry(coords.lat, coords.lng);
+              const globeSelect = document.getElementById('globe-country-select');
+              if (globeSelect && c.code && GLOBAL_COUNTRIES[c.code]) {
+                globeSelect.value = c.code;
+              }
+              state.selectedCountryCode = c.code || 'ARG';
+              showNotification(`🎯 Enfoque Orbital: ${c.name} (${c.capital})`, 'info');
+              return;
+            }
+          }
+        }
+
+        // C. Clic en la Tierra: Actualiza selección geográfica sin salir del globo
         const hits = raycaster.intersectObject(this.earthMesh);
         if (hits.length > 0) {
           const pt = hits[0].point;
           const coords = vector3ToLatLng(pt, 5.0);
-          this.descendToCoords(coords.lat, coords.lng);
+          const c = getClosestCountry(coords.lat, coords.lng);
+          const globeSelect = document.getElementById('globe-country-select');
+          if (globeSelect && c.code && GLOBAL_COUNTRIES[c.code]) {
+            globeSelect.value = c.code;
+          }
+          state.selectedCountryCode = c.code || 'ARG';
         }
       }
     });
 
-    // Double-click to descend directly into targeted spot
+    // Doble clic sobre la Tierra o país: Descender con suavidad al mapa de calles
     container.addEventListener('dblclick', (e) => {
       if (state.currentViewMode !== 'globe-3d' || this.isDescending) return;
       const rect = container.getBoundingClientRect();
@@ -766,42 +917,29 @@ const Globe3D = {
       }
     });
 
-    // Mouse wheel zoom gesture: When scrolling forward (inwards towards Earth)
-    // seamlessly transition down into the surface map!
-    const handleGlobeWheel = (e) => {
+    // Rueda del ratón: Permite acercamiento fluido; solo sumerge al mapa si se traspasa la superficie (< 5.12)
+    container.addEventListener('wheel', (e) => {
       if (state.currentViewMode !== 'globe-3d' || this.isDescending) return;
-      const dist = this.camera.position.distanceTo(this.controls ? this.controls.target : new THREE.Vector3(0, 0, 0));
-
-      // If scrolling in towards Earth and already getting close (dist <= 9.4)
-      if (e.deltaY < 0 && dist <= 9.4) {
-        const rect = container.getBoundingClientRect();
-        const m = new THREE.Vector2(
-          ((e.clientX - rect.left) / rect.width) * 2 - 1,
-          -((e.clientY - rect.top) / rect.height) * 2 + 1
-        );
-        const ray = new THREE.Raycaster();
-        ray.setFromCamera(m, this.camera);
-        let hits = ray.intersectObject(this.earthMesh);
-        if (!hits.length) {
-          ray.setFromCamera(new THREE.Vector2(0, 0), this.camera);
-          hits = ray.intersectObject(this.earthMesh);
-        }
-
-        if (hits.length > 0) {
-          const coords = vector3ToLatLng(hits[0].point, 5.0);
-          this.descendToCoords(coords.lat, coords.lng);
-        } else {
-          this.descendToCountry(state.selectedCountryCode || 'ARG');
+      if (e.deltaY < 0) { // Zooming inward
+        const dist = this.camera ? this.camera.position.length() : 15;
+        if (dist <= 5.12) {
+          this.checkZoomDescent({ x: e.clientX, y: e.clientY });
         }
       }
-    };
+    }, { passive: true });
 
-    container.addEventListener('wheel', handleGlobeWheel, { passive: true });
-    const hudEl = document.getElementById('globe-hud-overlay');
-    if (hudEl) hudEl.addEventListener('wheel', handleGlobeWheel, { passive: true });
-
-    // 11. Window Resize Listener
+    // 11. Window & Container Resize Listeners (Responsive & Anti-Stretch)
     window.addEventListener('resize', () => this.onResize());
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => this.onResize(), 100);
+    });
+
+    if (window.ResizeObserver) {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.onResize();
+      });
+      this.resizeObserver.observe(container);
+    }
 
     this.isInitialized = true;
     this.startAnimation();
@@ -810,15 +948,48 @@ const Globe3D = {
   onResize() {
     const container = document.getElementById('globe-3d-container');
     if (!container || !this.renderer || !this.camera) return;
-    const w = container.clientWidth || window.innerWidth;
-    const h = container.clientHeight || (window.innerHeight - 96);
-    this.camera.aspect = w / h;
+
+    const rect = container.getBoundingClientRect();
+    const w = Math.round(rect.width || container.clientWidth || window.innerWidth);
+    const h = Math.round(rect.height || container.clientHeight || (window.innerHeight - 52));
+
+    if (w <= 0 || h <= 0) return;
+
+    const aspect = w / h;
+    this.camera.aspect = aspect;
+    // Smart framing: auto-widen FOV on portrait screens so the globe is never clipped
+    this.camera.fov = aspect < 1.0 ? Math.min(65, 45 / Math.max(0.65, aspect)) : 45;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(w, h);
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.renderer.setPixelRatio(dpr);
+    // Passing false prevents Three.js from setting inline style.width/height in px, preserving CSS 100% responsiveness
+    this.renderer.setSize(w, h, false);
   },
 
   animate() {
     this.animId = requestAnimationFrame(() => this.animate());
+
+    // Continuous real-time viewport aspect ratio check: ensures 0ms lag adaptation and ZERO stretch
+    const container = document.getElementById('globe-3d-container');
+    if (container && this.renderer && this.camera) {
+      const curW = container.clientWidth;
+      const curH = container.clientHeight;
+      if (curW > 0 && curH > 0) {
+        const curAspect = curW / curH;
+        const canvas = this.renderer.domElement;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const targetBufW = Math.round(curW * dpr);
+        const targetBufH = Math.round(curH * dpr);
+
+        if (canvas.width !== targetBufW || canvas.height !== targetBufH || Math.abs(this.camera.aspect - curAspect) > 0.005) {
+          this.camera.aspect = curAspect;
+          this.camera.fov = curAspect < 1.0 ? Math.min(65, 45 / Math.max(0.65, curAspect)) : 45;
+          this.camera.updateProjectionMatrix();
+          this.renderer.setSize(curW, curH, false);
+        }
+      }
+    }
 
     const time = performance.now() * 0.001;
 
@@ -884,237 +1055,189 @@ const Globe3D = {
     this.laserLinksGroup = new THREE.Group();
     this.laserLines = [];
 
-    // 1. Starlink Shell 1 (LEO 548 km, 53° inclination)
-    const starlinkPlanes = 8;
-    const satsPerPlane = 5;
-    const inc53 = 53 * (Math.PI / 180);
-    const rStarlink = 5.48;
-
-    for (let p = 0; p < starlinkPlanes; p++) {
-      const raan = (p / starlinkPlanes) * Math.PI * 2;
-
-      // Trajectory ring
+    // Helper to generate orbital ring loop
+    const createOrbitRing = (radius, inc, raan, colorHex, typeName) => {
       const ringPts = [];
       for (let i = 0; i <= 64; i++) {
         const th = (i / 64) * Math.PI * 2;
-        const x = rStarlink * (Math.cos(raan) * Math.cos(th) - Math.sin(raan) * Math.sin(th) * Math.cos(inc53));
-        const y = rStarlink * (Math.sin(th) * Math.sin(inc53));
-        const z = rStarlink * (Math.sin(raan) * Math.cos(th) + Math.cos(raan) * Math.sin(th) * Math.cos(inc53));
+        const x = radius * (Math.cos(raan) * Math.cos(th) - Math.sin(raan) * Math.sin(th) * Math.cos(inc));
+        const y = radius * (Math.sin(th) * Math.sin(inc));
+        const z = radius * (Math.sin(raan) * Math.cos(th) + Math.cos(raan) * Math.sin(th) * Math.cos(inc));
         ringPts.push(new THREE.Vector3(x, y, z));
       }
       const ringGeo = new THREE.BufferGeometry().setFromPoints(ringPts);
       const ringMat = new THREE.LineBasicMaterial({
-        color: 0x00f0ff,
+        color: colorHex,
         transparent: true,
-        opacity: 0.20
+        opacity: 0.16
       });
       const ringLine = new THREE.LineLoop(ringGeo, ringMat);
-      ringLine.userData = { constellation: 'starlink' };
+      ringLine.userData = { constellation: typeName };
       this.orbitLinesGroup.add(ringLine);
+      return ringLine;
+    };
 
-      for (let s = 0; s < satsPerPlane; s++) {
-        const satIdNum = 1100 + p * 80 + s * 14;
-        const initialTheta = (s / satsPerPlane) * Math.PI * 2 + (p * 0.42);
+    // Helper to create micro satellite dot
+    const createSatelliteMesh = (colorHex) => {
+      const satObj = new THREE.Group();
+      const dotGeo = new THREE.SphereGeometry(0.042, 8, 8);
+      const dotMat = new THREE.MeshBasicMaterial({ color: colorHex });
+      satObj.add(new THREE.Mesh(dotGeo, dotMat));
 
-        const satObj = new THREE.Group();
-        const coreGeo = new THREE.SphereGeometry(0.048, 8, 8);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-        satObj.add(new THREE.Mesh(coreGeo, coreMat));
-
-        const panelGeo = new THREE.BoxGeometry(0.18, 0.012, 0.045);
-        const panelMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-        satObj.add(new THREE.Mesh(panelGeo, panelMat));
-
-        satObj.userData = {
-          id: `STARLINK-${satIdNum}`,
-          constellation: 'starlink',
-          shell: 'SHELL 1 (53.0° LEO)',
-          alt: '548.2 km',
-          vel: '27,360 km/h (7.6 km/s)',
-          period: '95.4 min',
-          status: 'OPERACIONAL',
-          uplink: '240 Mbps / 18ms',
-          gateway: 'Estación Terrena Buenos Aires / Lima'
-        };
-
-        this.satelliteSwarmGroup.add(satObj);
-        this.satellites.push({
-          mesh: satObj,
-          type: 'starlink',
-          radius: rStarlink,
-          inc: inc53,
-          raan: raan,
-          theta: initialTheta,
-          speed: 0.22 + (p % 3) * 0.015
-        });
-      }
-    }
-
-    // 2. Starlink Polar Shell (LEO 560 km, 70° inclination)
-    const polarPlanes = 3;
-    const polarSatsPerPlane = 4;
-    const inc70 = 70 * (Math.PI / 180);
-    const rPolar = 5.52;
-
-    for (let p = 0; p < polarPlanes; p++) {
-      const raan = (p / polarPlanes) * Math.PI * 2 + Math.PI / 6;
-
-      const ringPts = [];
-      for (let i = 0; i <= 64; i++) {
-        const th = (i / 64) * Math.PI * 2;
-        const x = rPolar * (Math.cos(raan) * Math.cos(th) - Math.sin(raan) * Math.sin(th) * Math.cos(inc70));
-        const y = rPolar * (Math.sin(th) * Math.sin(inc70));
-        const z = rPolar * (Math.sin(raan) * Math.cos(th) + Math.cos(raan) * Math.sin(th) * Math.cos(inc70));
-        ringPts.push(new THREE.Vector3(x, y, z));
-      }
-      const ringGeo = new THREE.BufferGeometry().setFromPoints(ringPts);
-      const ringMat = new THREE.LineBasicMaterial({
-        color: 0x38bdf8,
+      const haloGeo = new THREE.RingGeometry(0.05, 0.075, 12);
+      const haloMat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.25
+        opacity: 0.65
       });
-      const ringLine = new THREE.LineLoop(ringGeo, ringMat);
-      ringLine.userData = { constellation: 'starlink' };
-      this.orbitLinesGroup.add(ringLine);
+      satObj.add(new THREE.Mesh(haloGeo, haloMat));
+      return satObj;
+    };
 
-      for (let s = 0; s < polarSatsPerPlane; s++) {
-        const satIdNum = 3200 + p * 60 + s * 19;
-        const initialTheta = (s / polarSatsPerPlane) * Math.PI * 2 + (p * 0.5);
+    // 1. GNSS (42 satellites, yellow #eab308) - 6 planes x 7 satellites
+    const gnssPlanes = 6;
+    const gnssSatsPerPlane = 7;
+    const gnssInc = 55 * (Math.PI / 180);
+    const gnssRadius = 6.9;
 
-        const satObj = new THREE.Group();
-        const coreGeo = new THREE.SphereGeometry(0.048, 8, 8);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-        satObj.add(new THREE.Mesh(coreGeo, coreMat));
+    for (let p = 0; p < gnssPlanes; p++) {
+      const raan = (p / gnssPlanes) * Math.PI * 2;
+      createOrbitRing(gnssRadius, gnssInc, raan, 0xeab308, 'gnss');
 
-        const panelGeo = new THREE.BoxGeometry(0.18, 0.012, 0.045);
-        const panelMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-        satObj.add(new THREE.Mesh(panelGeo, panelMat));
+      for (let s = 0; s < gnssSatsPerPlane; s++) {
+        const satIdNum = 10 + p * 7 + s;
+        const initialTheta = (s / gnssSatsPerPlane) * Math.PI * 2 + (p * 0.4);
+        const satObj = createSatelliteMesh(0xeab308);
 
         satObj.userData = {
-          id: `STARLINK-POLAR-${satIdNum}`,
-          constellation: 'starlink',
-          shell: 'POLAR SHELL (70.0° LEO)',
-          alt: '560.4 km',
-          vel: '27,310 km/h (7.59 km/s)',
-          period: '95.8 min',
-          status: 'OPERACIONAL',
-          uplink: '220 Mbps / 21ms',
-          gateway: 'Enlace Óptico Láser Inter-Satélite (ISL)'
-        };
-
-        this.satelliteSwarmGroup.add(satObj);
-        this.satellites.push({
-          mesh: satObj,
-          type: 'starlink',
-          radius: rPolar,
-          inc: inc70,
-          raan: raan,
-          theta: initialTheta,
-          speed: 0.20 + (p % 2) * 0.02
-        });
-      }
-    }
-
-    // 3. GPS / GNSS Navstar Constellation (MEO 20,200 km, 55° inclination -> r = 7.1)
-    const gpsPlanes = 3;
-    const gpsSatsPerPlane = 3;
-    const inc55 = 55 * (Math.PI / 180);
-    const rGPS = 7.1;
-
-    for (let p = 0; p < gpsPlanes; p++) {
-      const raan = (p / gpsPlanes) * Math.PI * 2 + Math.PI / 4;
-
-      const ringPts = [];
-      for (let i = 0; i <= 64; i++) {
-        const th = (i / 64) * Math.PI * 2;
-        const x = rGPS * (Math.cos(raan) * Math.cos(th) - Math.sin(raan) * Math.sin(th) * Math.cos(inc55));
-        const y = rGPS * (Math.sin(th) * Math.sin(inc55));
-        const z = rGPS * (Math.sin(raan) * Math.cos(th) + Math.cos(raan) * Math.sin(th) * Math.cos(inc55));
-        ringPts.push(new THREE.Vector3(x, y, z));
-      }
-      const ringGeo = new THREE.BufferGeometry().setFromPoints(ringPts);
-      const ringMat = new THREE.LineBasicMaterial({
-        color: 0x00ffa3,
-        transparent: true,
-        opacity: 0.32
-      });
-      const ringLine = new THREE.LineLoop(ringGeo, ringMat);
-      ringLine.userData = { constellation: 'gps' };
-      this.orbitLinesGroup.add(ringLine);
-
-      for (let s = 0; s < gpsSatsPerPlane; s++) {
-        const satIdNum = 62 + p * 8 + s;
-        const initialTheta = (s / gpsSatsPerPlane) * Math.PI * 2 + (p * 0.7);
-
-        const satObj = new THREE.Group();
-        const coreGeo = new THREE.SphereGeometry(0.075, 10, 10);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffa3 });
-        satObj.add(new THREE.Mesh(coreGeo, coreMat));
-
-        const ringG = new THREE.RingGeometry(0.10, 0.14, 16);
-        const ringM = new THREE.MeshBasicMaterial({
-          color: 0x00ffa3,
-          side: THREE.DoubleSide,
-          transparent: true,
-          opacity: 0.8
-        });
-        satObj.add(new THREE.Mesh(ringG, ringM));
-
-        satObj.userData = {
-          id: `GPS-NAVSTAR-${satIdNum}`,
-          constellation: 'gps',
+          id: `GNSS-NAVSTAR-${satIdNum}`,
+          type: 'gnss',
           shell: 'GNSS MEO (55.0°)',
           alt: '20,200 km',
           vel: '13,900 km/h (3.86 km/s)',
           period: '718 min (11h 58m)',
-          status: 'TRANSMITIENDO SEÑAL L1/L2/L5',
-          uplink: 'Precisión Submétrica: 0.45m',
-          gateway: 'Red Geodésica Satelital Global'
+          status: 'Transmitiendo L1/L2/L5'
         };
 
         this.satelliteSwarmGroup.add(satObj);
         this.satellites.push({
           mesh: satObj,
-          type: 'gps',
-          radius: rGPS,
-          inc: inc55,
+          type: 'gnss',
+          radius: gnssRadius,
+          inc: gnssInc,
           raan: raan,
           theta: initialTheta,
-          speed: 0.08 + (p % 2) * 0.015
+          speed: 0.07 + (p % 2) * 0.01
         });
       }
     }
 
-    this.scene.add(this.orbitLinesGroup);
-    this.scene.add(this.satelliteSwarmGroup);
+    // 2. Circular / Starlink (27 satellites, cyan-green #34d399) - 3 planes x 9 satellites
+    const circPlanes = 3;
+    const circSatsPerPlane = 9;
+    const circInc = 53 * (Math.PI / 180);
+    const circRadius = 5.48;
 
-    // 4. Ground Gateways and Dynamic Laser Uplinks
-    this.groundGateways = [
-      { name: 'Buenos Aires', lat: -34.6037, lng: -58.3816 },
-      { name: 'Lima', lat: -12.0464, lng: -77.0428 },
-      { name: 'Santiago', lat: -33.4489, lng: -70.6693 },
-      { name: 'Bogotá', lat: 4.7110, lng: -74.0721 },
-      { name: 'Madrid', lat: 40.4168, lng: -3.7038 },
-      { name: 'Miami', lat: 25.7617, lng: -80.1918 },
-      { name: 'Tokio', lat: 35.6762, lng: 139.6503 }
-    ];
+    for (let p = 0; p < circPlanes; p++) {
+      const raan = (p / circPlanes) * Math.PI * 2 + Math.PI / 5;
+      createOrbitRing(circRadius, circInc, raan, 0x34d399, 'circular');
 
-    this.groundGateways.forEach(gw => {
-      const gwPos = latLngToVector3(gw.lat, gw.lng, 5.0);
-      const lGeo = new THREE.BufferGeometry().setFromPoints([gwPos, gwPos]);
-      const lMat = new THREE.LineBasicMaterial({
-        color: 0x00ffa3,
-        transparent: true,
-        opacity: 0.75,
-        blending: THREE.AdditiveBlending
-      });
-      const line = new THREE.Line(lGeo, lMat);
-      line.userData = { gw: gw, gwPos: gwPos };
-      this.laserLinksGroup.add(line);
-      this.laserLines.push(line);
+      for (let s = 0; s < circSatsPerPlane; s++) {
+        const satIdNum = 100 + p * 9 + s;
+        const initialTheta = (s / circSatsPerPlane) * Math.PI * 2 + (p * 0.6);
+        const satObj = createSatelliteMesh(0x34d399);
+
+        satObj.userData = {
+          id: `CIRCULAR-ORBIT-${satIdNum}`,
+          type: 'circular',
+          shell: 'CIRCULAR LEO (53.0°)',
+          alt: '550 km',
+          vel: '27,360 km/h (7.6 km/s)',
+          period: '95 min',
+          status: 'Operacional'
+        };
+
+        this.satelliteSwarmGroup.add(satObj);
+        this.satellites.push({
+          mesh: satObj,
+          type: 'circular',
+          radius: circRadius,
+          inc: circInc,
+          raan: raan,
+          theta: initialTheta,
+          speed: 0.22 + (p % 2) * 0.02
+        });
+      }
+    }
+
+    // 3. MEO (9 satellites, sky blue #0284c7) - 3 planes x 3 satellites
+    const meoPlanes = 3;
+    const meoSatsPerPlane = 3;
+    const meoInc = 45 * (Math.PI / 180);
+    const meoRadius = 6.2;
+
+    for (let p = 0; p < meoPlanes; p++) {
+      const raan = (p / meoPlanes) * Math.PI * 2 + Math.PI / 3;
+      createOrbitRing(meoRadius, meoInc, raan, 0x0284c7, 'meo');
+
+      for (let s = 0; s < meoSatsPerPlane; s++) {
+        const satIdNum = 200 + p * 3 + s;
+        const initialTheta = (s / meoSatsPerPlane) * Math.PI * 2;
+        const satObj = createSatelliteMesh(0x0284c7);
+
+        satObj.userData = {
+          id: `MEO-RELAY-${satIdNum}`,
+          type: 'meo',
+          shell: 'MEO INTERMEDIATE (45.0°)',
+          alt: '8,060 km',
+          vel: '18,200 km/h',
+          period: '320 min',
+          status: 'Enlace activo'
+        };
+
+        this.satelliteSwarmGroup.add(satObj);
+        this.satellites.push({
+          mesh: satObj,
+          type: 'meo',
+          radius: meoRadius,
+          inc: meoInc,
+          raan: raan,
+          theta: initialTheta,
+          speed: 0.12
+        });
+      }
+    }
+
+    // 4. Retrograde (1 satellite, pink #ec4899)
+    const retroInc = 135 * (Math.PI / 180);
+    const retroRadius = 5.75;
+    const retroRaan = Math.PI * 0.8;
+    createOrbitRing(retroRadius, retroInc, retroRaan, 0xec4899, 'retrograde');
+
+    const retroSatObj = createSatelliteMesh(0xec4899);
+    retroSatObj.userData = {
+      id: 'RETROGRADE-01',
+      type: 'retrograde',
+      shell: 'RETROGRADE POLAR (135.0°)',
+      alt: '720 km',
+      vel: '26,800 km/h',
+      period: '99 min',
+      status: 'Órbita inversa activa'
+    };
+    this.satelliteSwarmGroup.add(retroSatObj);
+    this.satellites.push({
+      mesh: retroSatObj,
+      type: 'retrograde',
+      radius: retroRadius,
+      inc: retroInc,
+      raan: retroRaan,
+      theta: 0.5,
+      speed: -0.19
     });
 
-    this.scene.add(this.laserLinksGroup);
+    this.scene.add(this.orbitLinesGroup);
+    this.scene.add(this.satelliteSwarmGroup);
   },
 
   selectSatellite(satData) {
@@ -1268,41 +1391,80 @@ const Globe3D = {
     this.descendToCoords(c.lat, c.lng, c, callback);
   },
 
+  checkZoomDescent(clientCoords = null) {
+    if (state.currentViewMode !== 'globe-3d' || this.isDescending || !this.camera || !this.earthMesh) return;
+    const dist = this.camera.position.length();
+    if (dist > 5.15) return; // Solo descender si realmente se penetra la superficie
+
+    const ray = new THREE.Raycaster();
+    if (clientCoords) {
+      const container = document.getElementById('globe-3d-container');
+      const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+      const mx = ((clientCoords.x - rect.left) / rect.width) * 2 - 1;
+      const my = -((clientCoords.y - rect.top) / rect.height) * 2 + 1;
+      ray.setFromCamera(new THREE.Vector2(mx, my), this.camera);
+    } else {
+      ray.setFromCamera(new THREE.Vector2(0, 0), this.camera);
+    }
+
+    const hits = ray.intersectObject(this.earthMesh);
+    if (hits.length > 0) {
+      const coords = vector3ToLatLng(hits[0].point, 5.0);
+      this.descendToCoords(coords.lat, coords.lng);
+    } else {
+      const dir = new THREE.Vector3();
+      this.camera.getWorldDirection(dir);
+      const pt = this.camera.position.clone().add(dir.multiplyScalar(dist - 5.0));
+      const coords = vector3ToLatLng(pt, 5.0);
+      this.descendToCoords(coords.lat, coords.lng);
+    }
+  },
+
   toggleGlobeTexture() {
-    const nextMode = this.globeTextureMode === 'dark' ? 'sat' : 'dark';
+    const nextMode = this.globeTextureMode === 'dark' ? 'light' : 'dark';
     this.applyGlobeTexture(nextMode);
   },
 
   applyGlobeTexture(mode) {
-    this.globeTextureMode = mode;
+    const isRealistic = mode === 'light' || mode === 'earth' || mode === 'realistic';
+    this.globeTextureMode = isRealistic ? 'light' : 'dark';
+
+    if (!this.cachedTextures['dark']) {
+      this.cachedTextures['dark'] = createProceduralEarthTexture('dark');
+    }
+    if (!this.cachedTextures['light']) {
+      this.cachedTextures['light'] = createProceduralEarthTexture('light');
+    }
+
+    const targetTex = isRealistic ? this.cachedTextures['light'] : this.cachedTextures['dark'];
+    if (this.earthMesh && targetTex) {
+      this.earthMesh.material.map = targetTex;
+      this.earthMesh.material.specular = new THREE.Color(isRealistic ? 0x163a65 : 0x050e18);
+      this.earthMesh.material.shininess = isRealistic ? 6 : 3;
+      this.earthMesh.material.needsUpdate = true;
+    }
+
+    if (this.atmosphereMesh) {
+      if (isRealistic) {
+        this.atmosphereMesh.visible = true;
+        this.atmosphereMesh.material.color.setHex(0x3892f0);
+        this.atmosphereMesh.material.opacity = 0.16;
+      } else {
+        this.atmosphereMesh.visible = false;
+        this.atmosphereMesh.material.opacity = 0.0;
+      }
+      this.atmosphereMesh.material.needsUpdate = true;
+    }
+
+    // El fondo espacial del globo 3D SIEMPRE permanece en negro profundo con estrellas
+    if (this.renderer) {
+      this.renderer.setClearColor(0x020306, 1);
+    }
+
     const btnText = document.getElementById('globe-style-btn-text');
     if (btnText) {
-      btnText.innerText = mode === 'dark' ? '3D OSCURO GRIS' : '3D SATELITAL HD';
+      btnText.innerText = isRealistic ? '3D Tierra Real' : '3D Táctico AITUE';
     }
-
-    const texUrl = mode === 'dark'
-      ? 'https://unpkg.com/three-globe/example/img/earth-night.jpg'
-      : 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
-
-    if (this.cachedTextures[mode] && this.earthMesh) {
-      this.earthMesh.material.map = this.cachedTextures[mode];
-      this.earthMesh.material.needsUpdate = true;
-      return;
-    }
-
-    const texLoader = new THREE.TextureLoader();
-    texLoader.load(
-      texUrl,
-      (tex) => {
-        this.cachedTextures[mode] = tex;
-        if (this.earthMesh) {
-          this.earthMesh.material.map = tex;
-          this.earthMesh.material.needsUpdate = true;
-        }
-      },
-      undefined,
-      (err) => console.log('Utilizando mapa base procedural 3D')
-    );
   },
 
   resetOrbit() {
@@ -1312,12 +1474,13 @@ const Globe3D = {
       this.controls.target.set(0, 0, 0);
     }
     const c = GLOBAL_COUNTRIES[state.selectedCountryCode] || GLOBAL_COUNTRIES.ARG;
-    const targetPos = latLngToVector3(c.lat, c.lng, 11.5);
+    const targetPos = latLngToVector3(c.lat, c.lng, 15.2);
     this.camera.position.set(targetPos.x, targetPos.y, targetPos.z);
     this.camera.lookAt(0, 0, 0);
     if (this.controls) {
       this.controls.update();
     }
+    this.onResize();
     const globeHUD = document.getElementById('globe-hud-overlay');
     if (globeHUD) {
       globeHUD.classList.remove('hud-hidden');
@@ -1346,6 +1509,12 @@ function transitionToSurface2D(targetCoords = [-34.5770, -58.4005], zoomLevel = 
   const vehBtn = document.getElementById('scope-btn-veh');
   if (vehBtn) vehBtn.classList.add('active');
 
+  // Sincronizar botones de proyección en la barra superior
+  const switchGlobe = document.getElementById('btn-switch-globe');
+  const switchSurface = document.getElementById('btn-switch-surface');
+  if (switchGlobe) switchGlobe.classList.remove('active');
+  if (switchSurface) switchSurface.classList.add('active');
+
   // Immediately hide 3D Globe & floating HUD
   const globeContainer = document.getElementById('globe-3d-container');
   const globeHUD = document.getElementById('globe-hud-overlay');
@@ -1370,22 +1539,30 @@ function transitionToSurface2D(targetCoords = [-34.5770, -58.4005], zoomLevel = 
     tacticalMap.style.pointerEvents = 'auto';
   }
 
-  // Force Leaflet recalculation & center on target
+  // Multiple staggered recalculations to guarantee zero black unrendered patches
+  [0, 40, 100, 200, 400].forEach(delay => {
+    setTimeout(() => {
+      if (map) {
+        map.invalidateSize({ pan: false });
+      }
+    }, delay);
+  });
+
   setTimeout(() => {
     if (map) {
-      map.invalidateSize();
-      map.setView(targetCoords, zoomLevel, { animate: true });
+      map.invalidateSize({ pan: false });
+      map.setView(targetCoords, zoomLevel, { animate: false });
       updateMapTiles();
       drawActiveRoute();
       renderVehicleMarkers();
       refresh3DMapElements();
       updateGeoOrientationHUD(`${c.name} • ${c.capital}`);
     }
-  }, 80);
+  }, 40);
 
   addAlertLog({
     severity: 'INFO',
-    title: `MAPA 3D CALLEJERO: ${c.name.toUpperCase()}`,
+    title: `Mapa 3D callejero: ${c.name}`,
     msg: `Navegación 3D en ${c.capital} (${c.name}). Corredor vial activo con detección de colisión en edificios.`,
     time: new Date().toLocaleTimeString()
   });
@@ -1394,6 +1571,12 @@ function transitionToSurface2D(targetCoords = [-34.5770, -58.4005], zoomLevel = 
 function transitionToOrbit3D() {
   state.currentViewMode = 'globe-3d';
   document.body.classList.add('mode-globe-active');
+
+  // Sincronizar botones de proyección
+  const switchGlobe = document.getElementById('btn-switch-globe');
+  const switchSurface = document.getElementById('btn-switch-surface');
+  if (switchGlobe) switchGlobe.classList.add('active');
+  if (switchSurface) switchSurface.classList.remove('active');
 
   // Mark globe button active
   document.querySelectorAll('.scope-btn').forEach(btn => btn.classList.remove('active'));
@@ -1426,19 +1609,22 @@ function transitionToOrbit3D() {
 
   Globe3D.startAnimation();
   Globe3D.resetOrbit();
+  Globe3D.onResize();
+  setTimeout(() => Globe3D.onResize(), 60);
+  setTimeout(() => Globe3D.onResize(), 250);
 
   const scaleEl = document.getElementById('geo-scale-label');
   const placeEl = document.getElementById('geo-place-name');
   const latlngEl = document.getElementById('geo-latlng');
   const breadcrumbEl = document.getElementById('map-location-breadcrumb');
-  if (scaleEl) scaleEl.innerText = 'ÓRBITA SATELITAL 3D';
+  if (scaleEl) scaleEl.innerText = 'Órbita satelital 3D';
   if (placeEl) placeEl.innerHTML = 'Planeta Tierra &bull; Espacio Orbital';
   if (latlngEl) latlngEl.innerText = 'Vista 360° &bull; Rotación Esférica';
   if (breadcrumbEl) breadcrumbEl.innerHTML = '🪐 Planeta Tierra &bull; Escala Orbital 3D';
 
   addAlertLog({
     severity: 'INFO',
-    title: 'SALIDA A ÓRBITA GLOBAL (PLANETA 3D)',
+    title: 'Salida a órbita global (Planeta 3D)',
     msg: 'Visualización orbital 3D del Planeta Tierra activa con rotación esférica 360° (OrbitControls).',
     time: new Date().toLocaleTimeString()
   });
@@ -1450,7 +1636,7 @@ function initMap() {
     zoomControl: false,
     attributionControl: false,
     minZoom: 2,
-    maxZoom: 19,
+    maxZoom: 20,
     worldCopyJump: true
   }).setView([-34.5770, -58.4005], 13);
 
@@ -1467,6 +1653,21 @@ function initMap() {
   renderVehicleMarkers();
   updateGeoOrientationHUD();
   refresh3DMapElements();
+
+  // Automatic Container ResizeObserver: completely prevents black patches
+  if (window.ResizeObserver) {
+    const mapResizeObserver = new ResizeObserver(() => {
+      if (map) {
+        map.invalidateSize({ pan: false });
+      }
+    });
+    const mapEl = document.getElementById('tactical-map');
+    if (mapEl) mapResizeObserver.observe(mapEl);
+    const wrapEl = document.getElementById('map-wrapper');
+    if (wrapEl) mapResizeObserver.observe(wrapEl);
+    const centerEl = document.querySelector('.center-stage');
+    if (centerEl) mapResizeObserver.observe(centerEl);
+  }
 }
 
 function updateGeoOrientationHUD(customPlace = null) {
@@ -1484,24 +1685,24 @@ function updateGeoOrientationHUD(customPlace = null) {
 
   const curCountry = GLOBAL_COUNTRIES[state.selectedCountryCode] || GLOBAL_COUNTRIES.ARG;
 
-  let scaleText = 'NIVEL TÁCTICO LOCAL';
+  let scaleText = 'Nivel táctico local';
   let placeText = customPlace || `${curCountry.capital} &bull; ${curCountry.name}`;
   let breadcrumbText = `📍 ${curCountry.name} (${curCountry.capital}) &bull; ${curCountry.continent}`;
 
   if (zoom <= 3) {
-    scaleText = 'VISTA CONTINENTAL / PAÍS';
+    scaleText = 'Vista continental / país';
     placeText = `${curCountry.name} &bull; ${curCountry.continent}`;
     breadcrumbText = `${curCountry.flag} ${curCountry.name} &bull; Escala País`;
   } else if (zoom <= 7) {
-    scaleText = 'VISTA REGIONAL';
+    scaleText = 'Vista regional';
     placeText = `Región Metropolitana &bull; ${curCountry.name}`;
     breadcrumbText = `🗺️ Región de ${curCountry.capital}`;
   } else if (zoom <= 12) {
-    scaleText = 'ZONA METROPOLITANA';
+    scaleText = 'Zona metropolitana';
     placeText = `${curCountry.capital} &bull; ${curCountry.name}`;
     breadcrumbText = `🏙️ Área Urbana ${curCountry.capital}`;
   } else {
-    scaleText = 'CORREDOR TÁCTICO DE CUSTODIA';
+    scaleText = 'Corredor táctico de custodia';
     placeText = `${curCountry.capital} &bull; Corredor Seguro`;
     breadcrumbText = `🎯 Monitoreo en ${curCountry.name}`;
   }
@@ -1559,7 +1760,7 @@ function locateUserGps() {
   }
 
   addAlertItem({
-    title: 'SOLICITANDO TU POSICIÓN GPS...',
+    title: 'Solicitando tu posición GPS...',
     desc: 'Buscando satélites del dispositivo local...',
     severity: 'info'
   });
@@ -1572,7 +1773,7 @@ function locateUserGps() {
       map.flyTo([lat, lng], 14, { duration: 1.6 });
 
       addAlertItem({
-        title: '📍 TU DISPOSITIVO FUE LOCALIZADO',
+        title: '📍 Tu dispositivo fue localizado',
         desc: `Ubicación detectada con precisión: [${lat.toFixed(4)}, ${lng.toFixed(4)}]. Marcador en mapa activo.`,
         severity: 'info'
       });
@@ -1596,7 +1797,7 @@ function setUserGpsMarker(lat, lng) {
       html: `
         <div class="user-gps-pulse-marker"></div>
         <div class="tactical-marker-label" style="border-color:#00ffa3; color:#00ffa3; margin-left:-25px;">
-          📍 TÚ ESTÁS AQUÍ
+          📍 Tu ubicación
         </div>
       `,
       iconSize: [24, 24],
@@ -1604,13 +1805,13 @@ function setUserGpsMarker(lat, lng) {
     });
 
     userGpsMarker = L.marker([lat, lng], { icon: userIcon })
-      .bindPopup(`<b>📍 TU UBICACIÓN ACTUAL</b><br>Coordenadas: ${lat.toFixed(5)}, ${lng.toFixed(5)}<br><small style="color:#00ffa3">Dispositivo Local Conectado</small>`)
+      .bindPopup(`<b>📍 Tu ubicación actual</b><br>Coordenadas: ${lat.toFixed(5)}, ${lng.toFixed(5)}<br><small style="color:#00ffa3">Dispositivo Local Conectado</small>`)
       .addTo(map);
   }
   userGpsMarker.openPopup();
 }
 
-// Clean, 100% Free World Tile Switcher without API keys or watermarks
+// Clean, 100% Free World Tile Switcher without API keys, watermarks or missing-tile errors
 function updateMapTiles(requestedMode = null) {
   if (!map) return;
   if (requestedMode && TILE_CONFIG[requestedMode]) {
@@ -1630,18 +1831,20 @@ function updateMapTiles(requestedMode = null) {
 
   const config = TILE_CONFIG[currentTileMode] || TILE_CONFIG.dark;
 
-  // 1. Add Base Tile Layer
+  // 1. Add Base Tile Layer with maxNativeZoom (guarantees Leaflet upscales without requesting non-existent tiles)
   currentTileLayer = L.tileLayer(config.url, {
-    maxZoom: config.maxZoom || 19,
+    maxZoom: config.maxZoom || 20,
+    maxNativeZoom: config.maxNativeZoom || 18,
     subdomains: config.subdomains || 'abc',
     attribution: ''
   }).addTo(map);
   currentTileLayer.bringToBack();
 
-  // 2. Add Reference Labels Layer if defined (e.g. for Dark Tactical Mode or Sat mode)
+  // 2. Add Reference Labels Layer if defined
   if (config.refUrl) {
     currentTileRefLayer = L.tileLayer(config.refUrl, {
-      maxZoom: config.maxZoom || 19,
+      maxZoom: config.maxZoom || 20,
+      maxNativeZoom: config.maxNativeZoom || 16,
       subdomains: config.subdomains || 'abc',
       attribution: ''
     }).addTo(map);
@@ -1663,17 +1866,17 @@ function updateMapDarkButtonUI() {
 
   btn.classList.remove('active', 'light-mode', 'sat-mode');
 
-  if (currentTileMode === 'dark') {
+  if (currentTileMode === 'dark' || currentTileMode === 'esriDark') {
     btn.classList.add('active');
-    btn.innerHTML = `<i class="fa-solid fa-moon text-cyan"></i> <span id="map-dark-btn-text">MAPA OSCURO</span>`;
+    btn.innerHTML = `<i class="fa-solid fa-moon text-cyan"></i> <span id="map-dark-btn-text">Mapa oscuro</span>`;
     btn.title = "Modo Oscuro Cyber Activo. Clic para cambiar a Mapa Claro";
   } else if (currentTileMode === 'sat') {
     btn.classList.add('sat-mode');
-    btn.innerHTML = `<i class="fa-solid fa-satellite text-purple"></i> <span id="map-dark-btn-text">SATELITAL HD</span>`;
+    btn.innerHTML = `<i class="fa-solid fa-satellite text-purple"></i> <span id="map-dark-btn-text">Satelital HD</span>`;
     btn.title = "Modo Satelital Activo. Clic para volver a Modo Oscuro";
   } else {
     btn.classList.add('light-mode');
-    btn.innerHTML = `<i class="fa-solid fa-sun text-amber"></i> <span id="map-dark-btn-text">MAPA CLARO</span>`;
+    btn.innerHTML = `<i class="fa-solid fa-sun text-amber"></i> <span id="map-dark-btn-text">Mapa claro</span>`;
     btn.title = "Modo Claro Activo. Clic para cambiar a Modo Oscuro";
   }
 }
@@ -1700,13 +1903,16 @@ function toggle3DTilt() {
       : `<i class="fa-solid fa-cube text-cyan"></i> <span>3D</span>`;
   }
 
+  // Activar o desactivar edificios volumétricos 3D conservando la superficie ortogonal plana
+  toggle3DBuildings();
+
   if (map) {
     setTimeout(() => {
       map.invalidateSize();
     }, 150);
   }
 
-  showNotification(is3D ? '🧊 Perspectiva 3D Táctica Activada' : '📐 Vista Cenital 2D Restaurada', 'info');
+  showNotification(is3D ? '🧊 Modelos 3D Activados (Vista plana de máxima exactitud)' : '📐 Vista Cenital Pura (Modelos 3D ocultos)', 'info');
 }
 
 // --- 3D Volumetric Buildings & Google Maps Style Inmersive Navigation ---
@@ -1840,7 +2046,7 @@ function init3DBuildings() {
   });
 
   L.marker([destLat, destLng], { icon: destIcon })
-    .bindPopup(`<b>🎯 DESTINO PRINCIPAL: HANGAR CENTRAL</b><br>Acceso Seguro &bull; Puesto de Guardia 01<br><small style="color:#00ffa3">Edificio de Llegada 3D</small>`)
+    .bindPopup(`<b>🎯 Destino principal: Hangar central</b><br>Acceso Seguro &bull; Puesto de Guardia 01<br><small style="color:#00ffa3">Edificio de Llegada 3D</small>`)
     .addTo(buildings3DLayerGroup);
 }
 
@@ -1990,12 +2196,12 @@ function openBridgePreviewModal(b) {
   const infoLoadEl = document.getElementById('bridge-info-load');
   const typeBadgeEl = document.getElementById('bridge-type-badge');
 
-  if (nameEl) nameEl.innerText = `${b.name.toUpperCase()} // INSPECCIÓN 3D`;
+  if (nameEl) nameEl.innerText = `${b.name} // Inspección 3D`;
   if (graphEl) graphEl.innerText = `${b.clearance.toFixed(2)} m`;
   if (infoNameEl) infoNameEl.innerText = b.name;
   if (infoClearEl) infoClearEl.innerText = `${b.clearance.toFixed(2)} m (Vehículo Rhino: 2.45m -> APTO ✅)`;
   if (infoLoadEl) infoLoadEl.innerText = `${b.maxTons} Toneladas (Blindado: 4.8T -> APTO ✅)`;
-  if (typeBadgeEl) typeBadgeEl.innerText = b.type.toUpperCase();
+  if (typeBadgeEl) typeBadgeEl.innerText = b.type;
 
   modal.classList.add('active');
 }
@@ -2356,7 +2562,7 @@ function deployFleetToCountry(countryCode) {
 
   addAlertLog({
     severity: 'INFO',
-    title: `FLOTA EN ${c.name.toUpperCase()} (MODO 3D)`,
+    title: `Flota en ${c.name} (Modo 3D)`,
     msg: `Móviles patrullando en ${c.capital}. Calzada vial activa entre edificios 3D volumétricos con detección de colisión.`,
     time: new Date().toLocaleTimeString()
   });
@@ -2379,28 +2585,45 @@ function applyTheme(theme, syncMap = true) {
   const body = document.getElementById('app-body');
   const icon = document.getElementById('theme-icon');
   const label = document.getElementById('theme-label');
+  const dockIcon = document.getElementById('dock-theme-icon');
 
   if (theme === 'light') {
     body.classList.remove('dark-tactical-theme');
     body.classList.add('light-theme');
     if (icon) icon.className = 'fa-solid fa-moon text-cyan';
-    if (label) label.innerText = 'TEMA OSCURO';
+    if (label) label.innerText = 'Tema oscuro';
+    if (dockIcon) dockIcon.className = 'fa-solid fa-moon text-cyan';
     if (syncMap) {
       currentTileMode = 'googleStreet';
     }
     if (typeof Globe3D !== 'undefined' && Globe3D.applyGlobeTexture) {
-      Globe3D.applyGlobeTexture('sat');
+      Globe3D.applyGlobeTexture('light');
     }
   } else {
     body.classList.add('dark-tactical-theme');
     body.classList.remove('light-theme');
     if (icon) icon.className = 'fa-solid fa-sun text-amber';
-    if (label) label.innerText = 'TEMA CLARO';
+    if (label) label.innerText = 'Tema claro';
+    if (dockIcon) dockIcon.className = 'fa-solid fa-sun text-amber';
     if (syncMap) {
       currentTileMode = 'dark';
     }
     if (typeof Globe3D !== 'undefined' && Globe3D.applyGlobeTexture) {
       Globe3D.applyGlobeTexture('dark');
+    }
+  }
+
+  const mapThemeBtn = document.getElementById('btn-toggle-map-dark');
+  const mapThemeBtnText = document.getElementById('map-dark-btn-text');
+  if (mapThemeBtn && mapThemeBtnText) {
+    if (theme === 'light') {
+      mapThemeBtn.classList.remove('active');
+      mapThemeBtn.classList.add('light-mode');
+      mapThemeBtnText.innerText = 'Mapa claro';
+    } else {
+      mapThemeBtn.classList.add('active');
+      mapThemeBtn.classList.remove('light-mode');
+      mapThemeBtnText.innerText = 'Mapa oscuro';
     }
   }
 
@@ -2446,34 +2669,35 @@ function setDashboardViewMode(mode, showToast = true) {
     btnExpandMap.title = mode === 'map' ? 'Restaurar cabina completa' : 'Despejar y ver solo el mapa';
   }
   if (btnExpandCam) {
-    btnExpandCam.innerHTML = mode === 'cam' ? '<i class="fa-solid fa-compress"></i> <span>RESTAURAR</span>' : '<i class="fa-solid fa-expand"></i> <span>SOLO CÁMARA</span>';
+    btnExpandCam.innerHTML = mode === 'cam' ? '<i class="fa-solid fa-compress"></i> <span>Restaurar</span>' : '<i class="fa-solid fa-expand"></i> <span>Solo cámara</span>';
     btnExpandCam.title = mode === 'cam' ? 'Restaurar cabina completa' : 'Despejar y ver solo la cámara';
   }
 
   if (mode === 'map') {
     grid.classList.add('view-mode-map');
-    if (showToast) showNotification('🗺️ Interfaz despejada: Vista de SOLO MAPA', 'info');
+    if (showToast) showNotification('🗺️ Interfaz despejada: Vista de solo mapa', 'info');
   } else if (mode === 'cam') {
     grid.classList.add('view-mode-cam');
-    if (showToast) showNotification('👁️ Interfaz despejada: Vista de SOLO CÁMARA ESPÍA', 'info');
+    if (showToast) showNotification('👁️ Interfaz despejada: Vista de solo cámara', 'info');
   } else {
     if (showToast) showNotification('🔲 Cabina completa restaurada', 'info');
   }
 
   localStorage.setItem('rhino_view_mode', mode);
 
-  // Resize Leaflet Map to fill new width
-  setTimeout(() => {
-    if (map) {
-      map.invalidateSize();
-    }
-    // Resize spycam canvas if in cam mode
-    const canvas = document.getElementById('camera-canvas');
-    if (canvas && canvas.parentElement) {
-      canvas.width = canvas.parentElement.clientWidth || 380;
-      canvas.height = canvas.parentElement.clientHeight || 215;
-    }
-  }, 100);
+  // Multi-frame Resize Leaflet Map to guarantee zero black areas
+  [0, 40, 100, 200, 400].forEach(delay => {
+    setTimeout(() => {
+      if (map) {
+        map.invalidateSize({ pan: false });
+      }
+      const canvas = document.getElementById('camera-canvas');
+      if (canvas && canvas.parentElement) {
+        canvas.width = canvas.parentElement.clientWidth || 380;
+        canvas.height = canvas.parentElement.clientHeight || 215;
+      }
+    }, delay);
+  });
 }
 
 // Draw polyline and buffer corridor
@@ -2542,13 +2766,13 @@ function renderVehicleMarkers() {
     const customIcon = L.divIcon({
       className: 'tactical-marker-container',
       html: `
-        ${isCrashed ? '<div class="crash-impact-burst">💥 IMPACTO</div>' : ''}
+        ${isCrashed ? '<div class="crash-impact-burst">💥 Impacto</div>' : ''}
         <div class="vehicle-headlight-beam" style="transform: rotate(${veh.heading}deg);"></div>
         <div class="tactical-vehicle-icon ${isCrashed ? 'crashed' : (isDeviated ? 'deviated' : '')}" style="border-color:${isCrashed ? '#ff0055' : (isSelected ? '#22d3ee' : '#38bdf8')}; transform: rotate(${veh.heading}deg);">
           <i class="fa-solid fa-location-arrow"></i>
         </div>
         <div class="tactical-marker-label" style="${isCrashed ? 'border-color:#ff0055; color:#ff0055; background:rgba(255,0,85,0.25);' : (isDeviated ? 'border-color:#ef4444; color:#ef4444;' : '')}">
-          ${isCrashed ? `¡COLISIÓN! ${veh.plate}` : `${veh.plate} &bull; ${veh.speed} km/h`}
+          ${isCrashed ? `¡Colisión! ${veh.plate}` : `${veh.plate} &bull; ${veh.speed} km/h`}
         </div>
       `,
       iconSize: [42, 60],
@@ -3958,10 +4182,25 @@ function setupEventListeners() {
     });
   }
 
-  // Dedicated 3D Map Perspective Tilt Button (rotateX 46° pitch & depth horizon)
+  // Dedicated 3D Map Toggle Button
   const tilt3DBtn = document.getElementById('btn-toggle-3d-tilt');
   if (tilt3DBtn) {
     tilt3DBtn.addEventListener('click', toggle3DTilt);
+  }
+
+  // Header Projection Switcher: Globo 3D vs Mapa Plano Táctico (SatelliteMap.space)
+  const switchGlobeBtn = document.getElementById('btn-switch-globe');
+  if (switchGlobeBtn) {
+    switchGlobeBtn.addEventListener('click', () => {
+      transitionToOrbit3D();
+    });
+  }
+  const switchSurfaceBtn = document.getElementById('btn-switch-surface');
+  if (switchSurfaceBtn) {
+    switchSurfaceBtn.addEventListener('click', () => {
+      const curCountry = GLOBAL_COUNTRIES[state.selectedCountryCode] || GLOBAL_COUNTRIES.ARG;
+      transitionToSurface2D([curCountry.lat, curCountry.lng], 13, curCountry);
+    });
   }
 
   // 3D Volumetric Buildings Toggle Button (Estilo Google Maps 3D)
@@ -4323,6 +4562,313 @@ function openDispatchModal(veh, reason = 'DESVÍO DE CORREDOR AUTORIZADO') {
   }
 }
 
+// --- SATELLITEMAP.SPACE DRAWER & OVERLAY CONTROLLERS ---
+function openDrawerTab(side, tabName) {
+  playTacticalClick();
+  const leftDrawer = document.getElementById('sidebar-left');
+  const rightDrawer = document.getElementById('sidebar-right');
+  const backdrop = document.getElementById('drawer-backdrop');
+
+  if (side === 'left') {
+    if (rightDrawer) rightDrawer.classList.remove('drawer-open');
+    if (leftDrawer) {
+      leftDrawer.classList.add('drawer-open');
+      if (tabName && typeof switchSidebarTab === 'function') {
+        switchSidebarTab(tabName);
+      }
+    }
+    if (backdrop) backdrop.classList.add('active');
+  } else if (side === 'right') {
+    if (leftDrawer) leftDrawer.classList.remove('drawer-open');
+    if (rightDrawer) {
+      rightDrawer.classList.add('drawer-open');
+      if (tabName === 'cam') {
+        const camEl = document.getElementById('spycam-panel');
+        if (camEl) camEl.scrollIntoView({ behavior: 'smooth' });
+      } else if (tabName === 'cockpit') {
+        const hudEl = document.querySelector('.cockpit-hud-card');
+        if (hudEl) hudEl.scrollIntoView({ behavior: 'smooth' });
+      } else if (tabName === 'alerts') {
+        const alertEl = document.querySelector('.alerts-feed-panel');
+        if (alertEl) alertEl.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    if (backdrop) backdrop.classList.add('active');
+  }
+}
+
+function closeAllDrawers() {
+  playTacticalClick();
+  const leftDrawer = document.getElementById('sidebar-left');
+  const rightDrawer = document.getElementById('sidebar-right');
+  const backdrop = document.getElementById('drawer-backdrop');
+
+  if (leftDrawer) leftDrawer.classList.remove('drawer-open');
+  if (rightDrawer) rightDrawer.classList.remove('drawer-open');
+  if (backdrop) backdrop.classList.remove('active');
+}
+
+// --- GPS GEOLOCATION & POSITIONING CONTROLLERS ---
+function locateUserGPS() {
+  playSonarPing();
+  addAlertLog({
+    severity: 'INFO',
+    title: 'SOLICITUD DE LOCALIZACIÓN GPS',
+    msg: 'Consultando satélites GNSS y coordenadas del dispositivo...',
+    time: new Date().toLocaleTimeString()
+  });
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = Math.round(pos.coords.accuracy || 15);
+
+        playLockTargetSound();
+
+        if (document.body.classList.contains('mode-globe-active')) {
+          switchProjectionMode('surface');
+        }
+
+        if (map) {
+          map.flyTo([lat, lng], 16, { animate: true, duration: 1.5 });
+          setUserGpsMarker(lat, lng);
+        }
+
+        const geoCoordsEl = document.getElementById('geo-latlng');
+        if (geoCoordsEl) geoCoordsEl.innerText = `${lat.toFixed(4)}° S/N, ${lng.toFixed(4)}° E/O`;
+        const geoPlaceEl = document.getElementById('geo-place-name');
+        if (geoPlaceEl) geoPlaceEl.innerText = `Mi Ubicación Local (Precisión: ±${accuracy}m)`;
+
+        showNotification(`📍 GPS fijado con éxito: [${lat.toFixed(4)}, ${lng.toFixed(4)}]`, 'success');
+      },
+      (err) => {
+        console.warn('Geolocation error / denied:', err);
+        recenterOnVehicle();
+        showNotification('⚠️ GPS de navegador no disponible. Re-centrado en convoy vehicular.', 'warning');
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  } else {
+    recenterOnVehicle();
+  }
+}
+
+function recenterOnVehicle() {
+  playTacticalClick();
+  const curVeh = getSelectedVehicle();
+  if (!curVeh) return;
+  if (document.body.classList.contains('mode-globe-active')) {
+    Globe3D.descendToCoords(curVeh.lat, curVeh.lng);
+  } else if (map) {
+    map.flyTo([curVeh.lat, curVeh.lng], 15, { animate: true, duration: 1.2 });
+    showNotification(`🎯 Re-centrado en ${curVeh.name} (${curVeh.plate})`, 'info');
+  }
+}
+
+function switchProjectionMode(mode) {
+  playTacticalClick();
+  if (mode === 'globe') {
+    transitionToOrbit3D();
+  } else {
+    const curVeh = getSelectedVehicle();
+    const coords = curVeh ? [curVeh.lat, curVeh.lng] : [-34.5770, -58.4005];
+    const c = GLOBAL_COUNTRIES[state.selectedCountryCode] || GLOBAL_COUNTRIES.ARG;
+    transitionToSurface2D(coords, 14, c);
+  }
+}
+
+// --- LIVE UTC CLOCK TICKER ---
+function updateUTCClock() {
+  const el = document.getElementById('sat-utc-clock');
+  if (!el) return;
+  const now = new Date();
+  const day = String(now.getUTCDate()).padStart(2, '0');
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const year = String(now.getUTCFullYear()).slice(-2);
+  const hours = String(now.getUTCHours()).padStart(2, '0');
+  const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+  el.innerText = `${day}/${month}/${year} ${hours}:${minutes}:${seconds} UTC`;
+}
+
+// --- SATELLITEMAP.SPACE CONTROLS & DOCK WIRING ---
+function initSatellitemapComponents() {
+  updateUTCClock();
+  setInterval(updateUTCClock, 1000);
+
+  const topGpsBtn = document.getElementById('btn-nav-locate-gps');
+  if (topGpsBtn) topGpsBtn.onclick = locateUserGPS;
+
+  const btnGlobe = document.getElementById('btn-switch-globe');
+  const btnSurface = document.getElementById('btn-switch-surface');
+  if (btnGlobe) btnGlobe.onclick = () => switchProjectionMode('globe');
+  if (btnSurface) btnSurface.onclick = () => switchProjectionMode('surface');
+
+  const burgerBtn = document.getElementById('btn-mobile-burger');
+  if (burgerBtn) {
+    burgerBtn.onclick = () => {
+      const leftDrawer = document.getElementById('sidebar-left');
+      if (leftDrawer && leftDrawer.classList.contains('drawer-open')) {
+        closeAllDrawers();
+      } else {
+        openDrawerTab('left', 'vehicles');
+      }
+    };
+  }
+
+  const orbitToggleBtn = document.getElementById('btn-toggle-orbit-card');
+  const orbitCard = document.getElementById('satellitemap-orbit-card');
+  if (orbitToggleBtn && orbitCard) {
+    orbitToggleBtn.onclick = () => {
+      orbitCard.classList.toggle('collapsed');
+      const icon = document.getElementById('orbit-toggle-icon');
+      if (icon) {
+        icon.className = orbitCard.classList.contains('collapsed') ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
+      }
+    };
+  }
+
+  const orbitThemeBtn = document.getElementById('btn-toggle-orbit-theme');
+  if (orbitThemeBtn) {
+    orbitThemeBtn.onclick = () => {
+      playTacticalClick();
+      toggleTheme();
+    };
+  }
+
+  const dockRecenter = document.getElementById('dock-btn-recenter');
+  if (dockRecenter) dockRecenter.onclick = recenterOnVehicle;
+
+  const dockGps = document.getElementById('dock-btn-gps');
+  if (dockGps) dockGps.onclick = locateUserGPS;
+
+  const dockTheme = document.getElementById('dock-btn-theme');
+  if (dockTheme) {
+    dockTheme.onclick = () => {
+      playTacticalClick();
+      toggleTheme();
+    };
+  }
+
+  const dockProj = document.getElementById('dock-btn-projection');
+  if (dockProj) {
+    dockProj.onclick = () => {
+      const isGlobe = document.body.classList.contains('mode-globe-active');
+      switchProjectionMode(isGlobe ? 'surface' : 'globe');
+    };
+  }
+
+  const dockLayers = document.getElementById('dock-btn-layers');
+  if (dockLayers) {
+    dockLayers.onclick = () => {
+      const select = document.getElementById('map-tile-style-select');
+      if (select) {
+        const styles = ['dark', 'esriDark', 'sat', 'googleStreet', 'street'];
+        const currentIdx = styles.indexOf(select.value);
+        const nextStyle = styles[(currentIdx + 1) % styles.length];
+        select.value = nextStyle;
+        updateMapTiles(nextStyle);
+      }
+    };
+  }
+
+  const dockBld = document.getElementById('dock-btn-3d-bld');
+  if (dockBld) {
+    dockBld.onclick = () => {
+      const btn = document.getElementById('btn-toggle-3d-buildings');
+      if (btn) btn.click();
+      dockBld.classList.toggle('active');
+    };
+  }
+
+  const dockBridges = document.getElementById('dock-btn-bridges');
+  if (dockBridges) {
+    dockBridges.onclick = () => {
+      const btn = document.getElementById('btn-toggle-3d-bridges');
+      if (btn) btn.click();
+      dockBridges.classList.toggle('active');
+    };
+  }
+
+  const dockCorridor = document.getElementById('dock-btn-corridor');
+  if (dockCorridor) {
+    dockCorridor.onclick = () => {
+      const btn = document.getElementById('btn-toggle-route-corridor');
+      if (btn) btn.click();
+    };
+  }
+
+  const dockZen = document.getElementById('dock-btn-zen');
+  if (dockZen) {
+    dockZen.onclick = () => {
+      playTacticalClick();
+      const mapWrapper = document.getElementById('map-wrapper');
+      const zenIcon = document.getElementById('zen-icon');
+      if (mapWrapper) {
+        mapWrapper.classList.toggle('zen-clean-mode');
+        const isZen = mapWrapper.classList.contains('zen-clean-mode');
+        if (zenIcon) {
+          zenIcon.className = isZen ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+        }
+        dockZen.classList.toggle('active', isZen);
+        showNotification(isZen ? '👁️ Modo Zen: Pantalla y mapa despejados' : 'Vista táctica normal restaurada', 'info');
+      }
+    };
+  }
+
+  const navCountrySelect = document.getElementById('nav-country-quick-select');
+  if (navCountrySelect) {
+    navCountrySelect.onchange = (e) => {
+      const code = e.target.value;
+      if (GLOBAL_COUNTRIES && GLOBAL_COUNTRIES[code]) {
+        const c = GLOBAL_COUNTRIES[code];
+        if (document.body.classList.contains('mode-globe-active')) {
+          Globe3D.descendToCoords(c.lat, c.lng, c);
+        } else {
+          transitionToSurface2D([c.lat, c.lng], c.zoom || 14, c);
+        }
+      }
+    };
+  }
+
+  const utcPlayBtn = document.getElementById('btn-utc-play');
+  if (utcPlayBtn) {
+    utcPlayBtn.onclick = () => {
+      state.simulationPlaying = !state.simulationPlaying;
+      const playIcon = document.getElementById('utc-play-icon');
+      if (playIcon) {
+        playIcon.className = state.simulationPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+      }
+      const simPlayIcon = document.getElementById('sim-play-icon');
+      if (simPlayIcon) {
+        simPlayIcon.className = state.simulationPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+      }
+    };
+  }
+
+  const utcFastBtn = document.getElementById('btn-utc-ff');
+  if (utcFastBtn) {
+    utcFastBtn.onclick = () => {
+      const curVeh = getSelectedVehicle();
+      if (curVeh) curVeh.speed = Math.min(130, curVeh.speed + 15);
+      const pill = document.getElementById('utc-speed-indicator');
+      if (pill) pill.innerText = '2x';
+    };
+  }
+
+  const utcRwBtn = document.getElementById('btn-utc-rw');
+  if (utcRwBtn) {
+    utcRwBtn.onclick = () => {
+      const curVeh = getSelectedVehicle();
+      if (curVeh) curVeh.speed = 48;
+      const pill = document.getElementById('utc-speed-indicator');
+      if (pill) pill.innerText = '1x';
+    };
+  }
+}
+
 // --- Main Init ---
 window.addEventListener('DOMContentLoaded', () => {
   initTheme();
@@ -4331,13 +4877,14 @@ window.addEventListener('DOMContentLoaded', () => {
   Globe3D.init();
   initCameraCanvas();
   setupEventListeners();
+  initSatellitemapComponents();
   renderVehicleList();
   renderDeviceChips();
   renderAlertsList();
 
-  // Guarantee page starts directly at street level in 3D perspective mode (no globe blocking)
-  transitionToSurface2D([-34.5770, -58.4005], 14, GLOBAL_COUNTRIES.ARG);
+  // Iniciar en modo Globo 3D Orbital (Estilo satellitemap.space)
+  transitionToOrbit3D();
 
-  // Run simulation tick at 25 FPS (40ms)
+  // Ticks de simulación a 25 FPS
   setInterval(updateSimulationStep, 40);
 });
