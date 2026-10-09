@@ -1391,10 +1391,17 @@ body.mode-globe-active .globe-hud-overlay {
   color: #fff;
 }
 
-/* Crystal-clean tile rendering (CartoDB & Satellite are native) */
+/* Crystal-clean tile rendering (Retina HD, crisp-edges & GPU hardware acceleration) */
+.leaflet-tile-container {
+  will-change: transform;
+}
+
 .leaflet-tile {
   filter: none !important;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.22s ease-out;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  will-change: transform, opacity;
 }
 
 body.mode-globe-active .map-overlay-bar {

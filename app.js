@@ -1751,7 +1751,9 @@ function transitionToSurface2D(targetCoords = [-34.5770, -58.4005], zoomLevel = 
     if (map) {
       map.invalidateSize({ pan: false });
       map.setView(targetCoords, zoomLevel, { animate: false });
-      updateMapTiles();
+      if (!currentTileLayer) {
+        updateMapTiles();
+      }
       drawActiveRoute();
       renderVehicleMarkers();
       refresh3DMapElements();
@@ -1836,7 +1838,18 @@ function initMap() {
     attributionControl: false,
     minZoom: 2,
     maxZoom: 20,
-    worldCopyJump: true
+    worldCopyJump: true,
+    // Dinámica inercial suave y posicionamiento ultra-estable
+    fadeAnimation: true,
+    zoomAnimation: true,
+    zoomAnimationThreshold: 8,
+    markerZoomAnimation: true,
+    inertia: true,
+    inertiaDeceleration: 2400,
+    inertiaMaxSpeed: 1600,
+    easeLinearity: 0.2,
+    wheelDebounceTime: 40,
+    wheelPxPerZoomLevel: 100
   }).setView([-34.5770, -58.4005], 13);
 
   L.control.zoom({ position: 'topright' }).addTo(map);
@@ -2010,7 +2023,7 @@ function setUserGpsMarker(lat, lng) {
   userGpsMarker.openPopup();
 }
 
-// Clean, 100% Free World Tile Switcher without API keys, watermarks or missing-tile errors
+// Clean, 100% Free World Tile Switcher with Retina Sharpness, Zero Black Flashes, and Buffered Streaming
 function updateMapTiles(requestedMode = null) {
   if (!map) return;
   if (requestedMode && TILE_CONFIG[requestedMode]) {
@@ -2018,35 +2031,53 @@ function updateMapTiles(requestedMode = null) {
   }
   localStorage.setItem('rhino_map_tile_mode', currentTileMode);
 
-  // Cleanly remove any previous tile layers
-  if (currentTileLayer) {
-    map.removeLayer(currentTileLayer);
-    currentTileLayer = null;
-  }
-  if (currentTileRefLayer) {
-    map.removeLayer(currentTileRefLayer);
-    currentTileRefLayer = null;
-  }
-
   const config = TILE_CONFIG[currentTileMode] || TILE_CONFIG.dark;
 
-  // 1. Add Base Tile Layer with maxNativeZoom (guarantees Leaflet upscales without requesting non-existent tiles)
+  // Buffer de transición continua: conservamos las capas activas para evitar pantallas negras o cuadrados vacíos
+  const oldTileLayer = currentTileLayer;
+  const oldRefLayer = currentTileRefLayer;
+
+  // 1. Capa Base con Soporte Retina (@2x), Buffer Generoso (keepBuffer: 12) y Transmisión Continua
   currentTileLayer = L.tileLayer(config.url, {
     maxZoom: config.maxZoom || 20,
     maxNativeZoom: config.maxNativeZoom || 18,
     subdomains: config.subdomains || 'abc',
-    attribution: ''
+    attribution: '',
+    detectRetina: true,        // Nitidez HD en pantallas Retina y alta resolución
+    keepBuffer: 12,            // Mantiene 12 teselas contiguas en RAM: elimina cuadrados negros al desplazarse
+    updateWhenIdle: false,     // Carga continua y suave durante el desplazamiento
+    updateWhenZooming: false,  // Carga inmediata durante animaciones de zoom
+    updateInterval: 50         // Tasa de refresco ultra-rápida (50ms)
   }).addTo(map);
-  currentTileLayer.bringToBack();
 
-  // 2. Add Reference Labels Layer if defined
+  // Cross-fade sin parpadeo negro: la capa anterior se retira suavemente sólo cuando las nuevas teselas estén cargadas
+  if (oldTileLayer) {
+    let cleaned = false;
+    const cleanupOld = () => {
+      if (cleaned) return;
+      cleaned = true;
+      if (oldTileLayer && map.hasLayer(oldTileLayer)) map.removeLayer(oldTileLayer);
+      if (oldRefLayer && map.hasLayer(oldRefLayer)) map.removeLayer(oldRefLayer);
+    };
+    currentTileLayer.once('load', cleanupOld);
+    setTimeout(cleanupOld, 450); // Límite máximo para garantizar limpieza de memoria
+  }
+
+  // 2. Capa de Etiquetas y Referencias (si está definida)
   if (config.refUrl) {
     currentTileRefLayer = L.tileLayer(config.refUrl, {
       maxZoom: config.maxZoom || 20,
       maxNativeZoom: config.maxNativeZoom || 16,
       subdomains: config.subdomains || 'abc',
-      attribution: ''
+      attribution: '',
+      detectRetina: true,
+      keepBuffer: 12,
+      updateWhenIdle: false,
+      updateWhenZooming: false,
+      updateInterval: 50
     }).addTo(map);
+  } else {
+    currentTileRefLayer = null;
   }
 
   // Sync Dropdown Select
@@ -3355,9 +3386,9 @@ function selectVehicle(vehId) {
   const veh = getSelectedVehicle();
   if (!veh) return;
 
-  // Update center
+  // Update center con animación suave y estable
   if (map) {
-    map.panTo([veh.lat, veh.lng]);
+    map.panTo([veh.lat, veh.lng], { animate: true, duration: 0.8, easeLinearity: 0.25 });
     drawActiveRoute();
   }
 
