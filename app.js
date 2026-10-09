@@ -469,22 +469,22 @@ function createProceduralEarthTexture(mode = 'dark') {
     }
   } else {
     // ==========================================
-    // MODO TÁCTICO AITUE (CYBER GEOPOLÍTICO OSCURO)
-    // Paleta de referencia: Azul grafito, Océano profundo, Azul eléctrico y Graticule cobrizo
+    // MODO TÁCTICO AITUE (CYBER GEOPOLÍTICO CLARO & LUMINOSO)
+    // Paleta aeroespacial: Océano azul marino luminoso, continentes azul pizarra definidos y fronteras cian
     // ==========================================
 
-    // 1. Océano Profundo AITUE
+    // 1. Océano Táctico AITUE (Luminoso, rico en azul marino espacial, sin ser negro ciego)
     const oceanGrad = ctx.createLinearGradient(0, 0, 0, height);
-    oceanGrad.addColorStop(0.0, '#030810');
-    oceanGrad.addColorStop(0.3, '#050f1c');
-    oceanGrad.addColorStop(0.5, '#081424');
-    oceanGrad.addColorStop(0.7, '#050f1c');
-    oceanGrad.addColorStop(1.0, '#030810');
+    oceanGrad.addColorStop(0.0, '#0c1f36');
+    oceanGrad.addColorStop(0.25, '#122c4d');
+    oceanGrad.addColorStop(0.5, '#183c66');
+    oceanGrad.addColorStop(0.75, '#122c4d');
+    oceanGrad.addColorStop(1.0, '#0c1f36');
     ctx.fillStyle = oceanGrad;
     ctx.fillRect(0, 0, width, height);
 
-    // 2. Continentes en Azul Grafito (#0c1827)
-    ctx.fillStyle = '#0c1827';
+    // 2. Continentes en Azul Pizarra Aeroespacial Luminoso (#1e3857: claramente distinguibles)
+    ctx.fillStyle = '#1e3857';
     if (countryFeatures.length > 0) {
       countryFeatures.forEach(feature => {
         const geom = feature.geometry || feature;
@@ -512,8 +512,8 @@ function createProceduralEarthTexture(mode = 'dark') {
       // 3. Líneas Provinciales y Regionales Internas (Delicadas y limpias)
       const provinceLines = (window.WORLD_DATA && window.WORLD_DATA.provinces) || [];
       if (provinceLines.length > 0) {
-        ctx.strokeStyle = 'rgba(47, 123, 255, 0.22)';
-        ctx.lineWidth = 0.55;
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.32)';
+        ctx.lineWidth = 0.65;
         ctx.beginPath();
         provinceLines.forEach(line => {
           if (line.length < 2) return;
@@ -527,9 +527,9 @@ function createProceduralEarthTexture(mode = 'dark') {
         ctx.stroke();
       }
 
-      // 4. Fronteras Nacionales Soberanas (Azul Eléctrico AITUE limpio)
-      ctx.strokeStyle = 'rgba(47, 123, 255, 0.70)';
-      ctx.lineWidth = 0.95;
+      // 4. Fronteras Nacionales Soberanas (Azul Eléctrico / Celeste Nítido AITUE)
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+      ctx.lineWidth = 1.1;
       ctx.beginPath();
       countryFeatures.forEach(feature => {
         const geom = feature.geometry || feature;
@@ -935,12 +935,12 @@ const Globe3D = {
     this.initSatelliteSwarmEvents();
 
     // 9. Lighting (Day/Night terminator with upper-left sun and ambient fill matching reference)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.38);
-    this.scene.add(ambientLight);
+    this.ambientLight = new THREE.AmbientLight(0xffffff, isCurrentLight ? 0.42 : 0.58);
+    this.scene.add(this.ambientLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffffff, 1.35);
-    sunLight.position.set(-14, 7, 8);
-    this.scene.add(sunLight);
+    this.sunLight = new THREE.DirectionalLight(0xffffff, isCurrentLight ? 1.45 : 1.25);
+    this.sunLight.position.set(-14, 7, 8);
+    this.scene.add(this.sunLight);
 
     this.cameraHeadlight = new THREE.DirectionalLight(0x2F7BFF, 0.22);
     this.cameraHeadlight.position.set(0, 0, 10);
@@ -1614,8 +1614,8 @@ const Globe3D = {
         this.earthMesh.material.map = this.cachedTextures['dark'];
         this.earthMesh.material.specularMap = null;
         this.earthMesh.material.normalMap = null;
-        this.earthMesh.material.specular = new THREE.Color(0x050e18);
-        this.earthMesh.material.shininess = 3;
+        this.earthMesh.material.specular = new THREE.Color(0x0e243a);
+        this.earthMesh.material.shininess = 6;
       }
       this.earthMesh.material.needsUpdate = true;
     }
@@ -1632,7 +1632,7 @@ const Globe3D = {
       if (isRealistic) {
         this.atmosphereMesh.visible = true;
         this.atmosphereMesh.material.color.setHex(0x38bdf8);
-        this.atmosphereMesh.material.opacity = 0.20;
+        this.atmosphereMesh.material.opacity = 0.22;
       } else {
         this.atmosphereMesh.visible = false;
         this.atmosphereMesh.material.opacity = 0.0;
@@ -1640,20 +1640,40 @@ const Globe3D = {
       this.atmosphereMesh.material.needsUpdate = true;
     }
 
+    // Luces equilibradas: en modo táctico se aumenta la luz ambiental para que la Tierra no quede tan oscura
+    if (this.ambientLight) {
+      this.ambientLight.intensity = isRealistic ? 0.42 : 0.60;
+    }
+    if (this.sunLight) {
+      this.sunLight.intensity = isRealistic ? 1.45 : 1.25;
+    }
+
     if (this.cameraHeadlight) {
       if (isRealistic) {
         this.cameraHeadlight.color.setHex(0xffffff);
         this.cameraHeadlight.intensity = 0.14;
       } else {
-        this.cameraHeadlight.color.setHex(0x2F7BFF);
-        this.cameraHeadlight.intensity = 0.22;
+        this.cameraHeadlight.color.setHex(0x38bdf8);
+        this.cameraHeadlight.intensity = 0.35;
       }
     }
 
-    // El fondo espacial del globo 3D SIEMPRE permanece en negro profundo con estrellas
-    if (this.renderer) {
-      this.renderer.setClearColor(0x020306, 1);
+    // Entorno 3D: en modo realista ocultamos los lásers y balizas artificiales para máxima pureza fotográfica
+    if (this.beaconGroup) {
+      this.beaconGroup.visible = !isRealistic;
     }
+    if (this.laserLinksGroup) {
+      this.laserLinksGroup.visible = !isRealistic && this.showLasers;
+    }
+
+    // Fondo espacial estelar profundo
+    if (this.renderer) {
+      this.renderer.setClearColor(isRealistic ? 0x02040b : 0x030509, 1);
+    }
+
+    // Sincronizar clases temáticas en el body para adaptar los paneles y HUD circundantes
+    document.body.classList.toggle('globe-theme-realistic', isRealistic);
+    document.body.classList.toggle('globe-theme-tactical', !isRealistic);
 
     const btnTactical = document.getElementById('btn-hud-mode-tactical');
     const btnReal = document.getElementById('btn-hud-mode-real');
@@ -1662,7 +1682,7 @@ const Globe3D = {
 
     const btnText = document.getElementById('globe-style-btn-text');
     if (btnText) {
-      btnText.innerText = isRealistic ? '3D Tierra Real (NASA)' : '3D Táctico AITUE';
+      btnText.innerText = isRealistic ? '3D Realista' : '3D Táctico AITUE';
     }
   },
 
@@ -5120,9 +5140,9 @@ window.setGlobeModeExplicit = function(mode) {
   if (typeof Globe3D !== 'undefined' && Globe3D.applyGlobeTexture) {
     Globe3D.applyGlobeTexture(mode);
   }
-  const isReal = mode === 'light';
+  const isReal = mode === 'light' || mode === 'realistic';
   showNotification(
-    isReal ? '🌍 Modo Tierra Real activado: Vista fotográfica desde el espacio con fondo oscuro' : '🌌 Modo Táctico AITUE activado: Visualización geoestratégica con fronteras cian',
+    isReal ? '🌍 Modo 3D Realista activado: Observación planetaria fotográfica en órbita' : '🌌 Modo 3D Táctico activado: Visualización geoestratégica con fronteras cian',
     'info'
   );
 };
