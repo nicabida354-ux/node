@@ -2,6 +2,14 @@
    RHINO SENTINEL - APP LOGIC & TELEMETRY SIMULATOR
    ===================================================================== */
 
+// --- Permanent Voice & Speech Cancellation ---
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  try {
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak = function() {}; // Silenciar permanentemente
+  } catch (e) {}
+}
+
 // --- Global Audio Alert Synthesizer (Web Audio API) ---
 let audioCtx = null;
 let soundEnabled = true;
@@ -119,7 +127,7 @@ const state = {
   activeBridges: [], // Array of active 3D bridge structures
   show3DStreets: true,
   inmersiveNav3D: false,
-  navVoiceEnabled: true,
+  navVoiceEnabled: false,
   lastSpokenManeuver: '',
 
   // ESP32 Cyber IoT Node State
@@ -279,21 +287,33 @@ const TILE_CONFIG = {
 // Global Country Coordinates & Hubs for instant worldwide navigation
 const GLOBAL_COUNTRIES = {
   ARG: { code: 'ARG', name: 'Argentina', flag: '🇦🇷', capital: 'Buenos Aires', lat: -34.6037, lng: -58.3816, zoom: 13, continent: 'Sudamérica' },
-  ESP: { code: 'ESP', name: 'España', flag: '🇪🇸', capital: 'Madrid', lat: 40.4168, lng: -3.7038, zoom: 13, continent: 'Europa' },
-  MEX: { code: 'MEX', name: 'México', flag: '🇲🇽', capital: 'Ciudad de México', lat: 19.4326, lng: -99.1332, zoom: 13, continent: 'Norteamérica' },
-  USA: { code: 'USA', name: 'Estados Unidos', flag: '🇺🇸', capital: 'Miami / Washington', lat: 25.7617, lng: -80.1918, zoom: 13, continent: 'Norteamérica' },
-  COL: { code: 'COL', name: 'Colombia', flag: '🇨🇴', capital: 'Bogotá', lat: 4.7110, lng: -74.0721, zoom: 13, continent: 'Sudamérica' },
+  BRA: { code: 'BRA', name: 'Brasil', flag: '🇧🇷', capital: 'São Paulo / Brasilia', lat: -23.5505, lng: -46.6333, zoom: 12, continent: 'Sudamérica' },
   CHL: { code: 'CHL', name: 'Chile', flag: '🇨🇱', capital: 'Santiago', lat: -33.4489, lng: -70.6693, zoom: 13, continent: 'Sudamérica' },
-  BRA: { code: 'BRA', name: 'Brasil', flag: '🇧🇷', capital: 'São Paulo', lat: -23.5505, lng: -46.6333, zoom: 13, continent: 'Sudamérica' },
-  PER: { code: 'PER', name: 'Perú', flag: '🇵🇪', capital: 'Lima', lat: -12.0464, lng: -77.0428, zoom: 13, continent: 'Sudamérica' },
   URY: { code: 'URY', name: 'Uruguay', flag: '🇺🇾', capital: 'Montevideo', lat: -34.9011, lng: -56.1645, zoom: 13, continent: 'Sudamérica' },
+  PRY: { code: 'PRY', name: 'Paraguay', flag: '🇵🇾', capital: 'Asunción', lat: -25.2637, lng: -57.5759, zoom: 13, continent: 'Sudamérica' },
+  BOL: { code: 'BOL', name: 'Bolivia', flag: '🇧🇴', capital: 'La Paz / Sucre', lat: -16.5000, lng: -68.1500, zoom: 13, continent: 'Sudamérica' },
+  PER: { code: 'PER', name: 'Perú', flag: '🇵🇪', capital: 'Lima', lat: -12.0464, lng: -77.0428, zoom: 13, continent: 'Sudamérica' },
+  ECU: { code: 'ECU', name: 'Ecuador', flag: '🇪🇨', capital: 'Quito', lat: -0.1807, lng: -78.4678, zoom: 13, continent: 'Sudamérica' },
+  COL: { code: 'COL', name: 'Colombia', flag: '🇨🇴', capital: 'Bogotá', lat: 4.7110, lng: -74.0721, zoom: 13, continent: 'Sudamérica' },
+  VEN: { code: 'VEN', name: 'Venezuela', flag: '🇻🇪', capital: 'Caracas', lat: 10.4806, lng: -66.9036, zoom: 13, continent: 'Sudamérica' },
+  PAN: { code: 'PAN', name: 'Panamá', flag: '🇵🇦', capital: 'Ciudad de Panamá', lat: 8.9824, lng: -79.5199, zoom: 13, continent: 'Centroamérica' },
+  CRI: { code: 'CRI', name: 'Costa Rica', flag: '🇨🇷', capital: 'San José', lat: 9.9281, lng: -84.0907, zoom: 13, continent: 'Centroamérica' },
+  MEX: { code: 'MEX', name: 'México', flag: '🇲🇽', capital: 'Ciudad de México', lat: 19.4326, lng: -99.1332, zoom: 13, continent: 'Norteamérica' },
+  USA: { code: 'USA', name: 'Estados Unidos', flag: '🇺🇸', capital: 'Washington / Miami', lat: 25.7617, lng: -80.1918, zoom: 13, continent: 'Norteamérica' },
+  CAN: { code: 'CAN', name: 'Canadá', flag: '🇨🇦', capital: 'Toronto / Ottawa', lat: 43.6532, lng: -79.3832, zoom: 13, continent: 'Norteamérica' },
+  ESP: { code: 'ESP', name: 'España', flag: '🇪🇸', capital: 'Madrid', lat: 40.4168, lng: -3.7038, zoom: 13, continent: 'Europa' },
   FRA: { code: 'FRA', name: 'Francia', flag: '🇫🇷', capital: 'París', lat: 48.8566, lng: 2.3522, zoom: 13, continent: 'Europa' },
   DEU: { code: 'DEU', name: 'Alemania', flag: '🇩🇪', capital: 'Berlín', lat: 52.5200, lng: 13.4050, zoom: 13, continent: 'Europa' },
   ITA: { code: 'ITA', name: 'Italia', flag: '🇮🇹', capital: 'Roma', lat: 41.9028, lng: 12.4964, zoom: 13, continent: 'Europa' },
   GBR: { code: 'GBR', name: 'Reino Unido', flag: '🇬🇧', capital: 'Londres', lat: 51.5074, lng: -0.1278, zoom: 13, continent: 'Europa' },
+  PRT: { code: 'PRT', name: 'Portugal', flag: '🇵🇹', capital: 'Lisboa', lat: 38.7223, lng: -9.1393, zoom: 13, continent: 'Europa' },
+  RUS: { code: 'RUS', name: 'Rusia', flag: '🇷🇺', capital: 'Moscú', lat: 55.7558, lng: 37.6173, zoom: 12, continent: 'Eurasia' },
+  CHN: { code: 'CHN', name: 'China', flag: '🇨🇳', capital: 'Pekín', lat: 39.9042, lng: 116.4074, zoom: 12, continent: 'Asia' },
   JPN: { code: 'JPN', name: 'Japón', flag: '🇯🇵', capital: 'Tokio', lat: 35.6762, lng: 139.6503, zoom: 13, continent: 'Asia' },
-  CAN: { code: 'CAN', name: 'Canadá', flag: '🇨🇦', capital: 'Toronto', lat: 43.6532, lng: -79.3832, zoom: 13, continent: 'Norteamérica' },
-  AUS: { code: 'AUS', name: 'Australia', flag: '🇦🇺', capital: 'Sídney', lat: -33.8688, lng: 151.2093, zoom: 13, continent: 'Oceanía' }
+  IND: { code: 'IND', name: 'India', flag: '🇮🇳', capital: 'Nueva Delhi', lat: 28.6139, lng: 77.2090, zoom: 12, continent: 'Asia' },
+  AUS: { code: 'AUS', name: 'Australia', flag: '🇦🇺', capital: 'Sídney / Canberra', lat: -33.8688, lng: 151.2093, zoom: 13, continent: 'Oceanía' },
+  ZAF: { code: 'ZAF', name: 'Sudáfrica', flag: '🇿🇦', capital: 'Pretoria', lat: -25.7479, lng: 28.2293, zoom: 12, continent: 'África' },
+  EGY: { code: 'EGY', name: 'Egipto', flag: '🇪🇬', capital: 'El Cairo', lat: 30.0444, lng: 31.2357, zoom: 12, continent: 'África' }
 };
 
 let userGpsMarker = null;
@@ -342,6 +362,20 @@ function getClosestCountry(lat, lng) {
     zoom: 12,
     continent: lat >= 0 ? 'Hemisferio Norte' : 'Hemisferio Sur'
   };
+}
+
+function getLocationDayNightStatus(lat, lng) {
+  const now = new Date();
+  const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+  const sunLng = -((utcHours - 12) * 15);
+  const dayOfYear = Math.floor((now - new Date(Date.UTC(now.getUTCFullYear(), 0, 1))) / 86400000);
+  const decRad = (23.44 * Math.sin(((dayOfYear - 80) * 2 * Math.PI) / 365.25)) * (Math.PI / 180);
+  const latRad = lat * (Math.PI / 180);
+  const dLngRad = (lng - sunLng) * (Math.PI / 180);
+  const cosZenith = Math.sin(latRad) * Math.sin(decRad) + Math.cos(latRad) * Math.cos(decRad) * Math.cos(dLngRad);
+  if (cosZenith > 0.08) return { label: '☀️ De Día', status: 'day', icon: 'fa-sun', color: '#f59e0b' };
+  if (cosZenith < -0.08) return { label: '🌙 De Noche', status: 'night', icon: 'fa-moon', color: '#38bdf8' };
+  return { label: '🌅 Crepúsculo', status: 'twilight', icon: 'fa-cloud-sun', color: '#fb923c' };
 }
 
 function createProceduralEarthTexture(mode = 'dark') {
@@ -469,22 +503,22 @@ function createProceduralEarthTexture(mode = 'dark') {
     }
   } else {
     // ==========================================
-    // MODO TÁCTICO AITUE (CYBER GEOPOLÍTICO CLARO & LUMINOSO)
-    // Paleta aeroespacial: Océano azul marino luminoso, continentes azul pizarra definidos y fronteras cian
+    // MODO TÁCTICO AITUE (MINIMALISTA, ELEGANTE & OBSIDIAN STEALTH)
+    // Paleta aeroespacial: Océano obsidiana espacial, continentes titanio grafito y cuadrícula sutil
     // ==========================================
 
-    // 1. Océano Táctico AITUE (Luminoso, rico en azul marino espacial, sin ser negro ciego)
+    // 1. Océano Táctico Minimalista (Negro obsidiana con profundidad naval aterciopelada)
     const oceanGrad = ctx.createLinearGradient(0, 0, 0, height);
-    oceanGrad.addColorStop(0.0, '#0c1f36');
-    oceanGrad.addColorStop(0.25, '#122c4d');
-    oceanGrad.addColorStop(0.5, '#183c66');
-    oceanGrad.addColorStop(0.75, '#122c4d');
-    oceanGrad.addColorStop(1.0, '#0c1f36');
+    oceanGrad.addColorStop(0.0, '#040711');
+    oceanGrad.addColorStop(0.3, '#070f1e');
+    oceanGrad.addColorStop(0.5, '#0a1426');
+    oceanGrad.addColorStop(0.7, '#070f1e');
+    oceanGrad.addColorStop(1.0, '#040711');
     ctx.fillStyle = oceanGrad;
     ctx.fillRect(0, 0, width, height);
 
-    // 2. Continentes en Azul Pizarra Aeroespacial Luminoso (#1e3857: claramente distinguibles)
-    ctx.fillStyle = '#1e3857';
+    // 2. Continentes en Titanio Pizarra Sigiloso (Elegante contraste oscuro sin saturación azul)
+    ctx.fillStyle = '#0f1c30';
     if (countryFeatures.length > 0) {
       countryFeatures.forEach(feature => {
         const geom = feature.geometry || feature;
@@ -509,27 +543,9 @@ function createProceduralEarthTexture(mode = 'dark') {
         else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(poly => fillRings(poly));
       });
 
-      // 3. Líneas Provinciales y Regionales Internas (Delicadas y limpias)
-      const provinceLines = (window.WORLD_DATA && window.WORLD_DATA.provinces) || [];
-      if (provinceLines.length > 0) {
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.32)';
-        ctx.lineWidth = 0.65;
-        ctx.beginPath();
-        provinceLines.forEach(line => {
-          if (line.length < 2) return;
-          const [sx, sy] = toCanvas(line[0][0], line[0][1]);
-          ctx.moveTo(sx, sy);
-          for (let i = 1; i < line.length; i++) {
-            const [px, py] = toCanvas(line[i][0], line[i][1]);
-            ctx.lineTo(px, py);
-          }
-        });
-        ctx.stroke();
-      }
-
-      // 4. Fronteras Nacionales Soberanas (Azul Eléctrico / Celeste Nítido AITUE)
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
-      ctx.lineWidth = 1.1;
+      // 3. Costas y Siluetas Continentales (Finas, sutiles y armónicas)
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.16)';
+      ctx.lineWidth = 0.65;
       ctx.beginPath();
       countryFeatures.forEach(feature => {
         const geom = feature.geometry || feature;
@@ -553,12 +569,12 @@ function createProceduralEarthTexture(mode = 'dark') {
       ctx.stroke();
     }
 
-    // 5. Cuadrícula de Coordenadas Táctica (Graticule Grid Cobrizo Táctico)
-    ctx.strokeStyle = 'rgba(168, 79, 58, 0.32)';
-    ctx.lineWidth = 0.85;
+    // 4. Cuadrícula de Coordenadas Orbital Minimalista (Gris hielo aeroespacial ultra-tenue)
+    ctx.strokeStyle = 'rgba(148, 175, 205, 0.07)';
+    ctx.lineWidth = 0.5;
 
-    // Paralelos de -75° a +75° cada 15°
-    for (let lat = -75; lat <= 75; lat += 15) {
+    // Paralelos cada 20°
+    for (let lat = -80; lat <= 80; lat += 20) {
       const y = ((90 - lat) / 180) * height;
       ctx.beginPath();
       ctx.moveTo(0, y);
@@ -566,8 +582,8 @@ function createProceduralEarthTexture(mode = 'dark') {
       ctx.stroke();
     }
 
-    // Meridianos de -180° a +180° cada 15°
-    for (let lon = -180; lon <= 180; lon += 15) {
+    // Meridianos cada 30°
+    for (let lon = -180; lon <= 180; lon += 30) {
       const x = ((lon + 180) / 360) * width;
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -575,9 +591,9 @@ function createProceduralEarthTexture(mode = 'dark') {
       ctx.stroke();
     }
 
-    // Líneas Principales: Ecuador y Greenwich
-    ctx.strokeStyle = 'rgba(205, 95, 75, 0.55)';
-    ctx.lineWidth = 1.2;
+    // Línea de Ecuador y Greenwich (Delicada guía cian)
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.18)';
+    ctx.lineWidth = 0.75;
     ctx.beginPath();
     ctx.moveTo(0, height / 2);
     ctx.lineTo(width, height / 2);
@@ -586,17 +602,6 @@ function createProceduralEarthTexture(mode = 'dark') {
     ctx.moveTo(width / 2, 0);
     ctx.lineTo(width / 2, height);
     ctx.stroke();
-
-    // Círculos Polares
-    ctx.strokeStyle = 'rgba(168, 79, 58, 0.30)';
-    ctx.lineWidth = 0.85;
-    [-80, -66.5, 66.5, 80].forEach(pLat => {
-      const py = ((90 - pLat) / 180) * height;
-      ctx.beginPath();
-      ctx.moveTo(0, py);
-      ctx.lineTo(width, py);
-      ctx.stroke();
-    });
   }
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -605,7 +610,7 @@ function createProceduralEarthTexture(mode = 'dark') {
 }
 
 // Genera capa de fronteras vectoriales tácticas delgadas y translúcidas sobrepuesta en 3D
-function createTacticalBordersOverlayTexture() {
+function createTacticalBordersOverlayTexture(activeCode = null) {
   const width = 4096;
   const height = 2048;
   const canvas = document.createElement('canvas');
@@ -624,37 +629,66 @@ function createTacticalBordersOverlayTexture() {
     ];
   }
 
+  const highlightCode = activeCode || (typeof state !== 'undefined' ? state.selectedCountryCode : 'ARG') || 'ARG';
+  const highlightCountryObj = GLOBAL_COUNTRIES[highlightCode] || GLOBAL_COUNTRIES.ARG;
+  const highlightName = (highlightCountryObj && highlightCountryObj.name) ? highlightCountryObj.name.toLowerCase() : 'argentina';
+
+  const isFeatureActive = (f) => {
+    if (!f || !f.properties || !f.properties.name) return false;
+    const n = f.properties.name.toLowerCase();
+    if (n === highlightName) return true;
+    if (highlightCode === 'ARG' && (n === 'argentina' || n.includes('argentin'))) return true;
+    if (highlightCode === 'BRA' && (n === 'brazil' || n === 'brasil')) return true;
+    if (highlightCode === 'CHL' && n === 'chile') return true;
+    if (highlightCode === 'USA' && (n.includes('united states') || n === 'usa')) return true;
+    if (highlightCode === 'ESP' && (n === 'spain' || n === 'españa')) return true;
+    return false;
+  };
+
   if (countryFeatures.length > 0) {
-    // Líneas Geopolíticas Delicadas: Estilo satélite militar / HUD orbital NASA
-    ctx.strokeStyle = 'rgba(180, 225, 255, 0.40)';
-    ctx.lineWidth = 1.0;
-    ctx.beginPath();
+    const activeFeatures = [];
+    const regularFeatures = [];
+
     countryFeatures.forEach(feature => {
+      if (isFeatureActive(feature)) {
+        activeFeatures.push(feature);
+      } else {
+        regularFeatures.push(feature);
+      }
+    });
+
+    const traceFeatureRings = (feature, onRing) => {
       const geom = feature.geometry || feature;
       if (!geom) return;
-
-      const traceRings = (rings) => {
+      const processRings = (rings) => {
         rings.forEach(ring => {
           if (ring.length < 2) return;
+          ctx.beginPath();
           const [sx, sy] = toCanvas(ring[0][0], ring[0][1]);
           ctx.moveTo(sx, sy);
           for (let i = 1; i < ring.length; i++) {
             const [px, py] = toCanvas(ring[i][0], ring[i][1]);
             ctx.lineTo(px, py);
           }
+          onRing();
         });
       };
+      if (geom.type === 'Polygon') processRings(geom.coordinates);
+      else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(poly => processRings(poly));
+    };
 
-      if (geom.type === 'Polygon') traceRings(geom.coordinates);
-      else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(poly => traceRings(poly));
+    // 1. Países Regulares Mundiales: Trazo ultra-fino, sutil y armónico estilo radar satelital
+    ctx.strokeStyle = 'rgba(148, 175, 205, 0.16)';
+    ctx.lineWidth = 0.70;
+    regularFeatures.forEach(feature => {
+      traceFeatureRings(feature, () => ctx.stroke());
     });
-    ctx.stroke();
 
-    // Líneas Provinciales y Regionales
+    // 2. Líneas provinciales y regionales internas: Delicadas y tenues
     const provinceLines = (window.WORLD_DATA && window.WORLD_DATA.provinces) || [];
     if (provinceLines.length > 0) {
-      ctx.strokeStyle = 'rgba(120, 190, 255, 0.22)';
-      ctx.lineWidth = 0.6;
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+      ctx.lineWidth = 0.45;
       ctx.beginPath();
       provinceLines.forEach(line => {
         if (line.length < 2) return;
@@ -666,6 +700,43 @@ function createTacticalBordersOverlayTexture() {
         }
       });
       ctx.stroke();
+    }
+
+    // 3. PAÍS OPERATIVO ACTIVO (Argentina / Seleccionado): Resalto distintivo AITUE Cyan
+    if (activeFeatures.length > 0) {
+      activeFeatures.forEach(feature => {
+        const geom = feature.geometry || feature;
+        if (geom) {
+          // Velo territorial sutil cian (combina tanto con el globo táctico como con el realista)
+          ctx.fillStyle = 'rgba(0, 240, 255, 0.06)';
+          const fillRings = (rings) => {
+            ctx.beginPath();
+            rings.forEach(ring => {
+              if (ring.length < 2) return;
+              const [sx, sy] = toCanvas(ring[0][0], ring[0][1]);
+              ctx.moveTo(sx, sy);
+              for (let i = 1; i < ring.length; i++) {
+                const [px, py] = toCanvas(ring[i][0], ring[i][1]);
+                ctx.lineTo(px, py);
+              }
+            });
+            ctx.closePath();
+            ctx.fill();
+          };
+          if (geom.type === 'Polygon') fillRings(geom.coordinates);
+          else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(poly => fillRings(poly));
+        }
+
+        // Resplandor exterior suave cian
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
+        ctx.lineWidth = 2.8;
+        traceFeatureRings(feature, () => ctx.stroke());
+
+        // Borde central definido cian luminoso AITUE
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.95)';
+        ctx.lineWidth = 1.4;
+        traceFeatureRings(feature, () => ctx.stroke());
+      });
     }
   }
 
@@ -681,6 +752,7 @@ const Globe3D = {
   controls: null,
   earthMesh: null,
   atmosphereMesh: null,
+  innerAtmosphereMesh: null,
   satelliteGroup: null,
   beaconGroup: null,
   beaconRing: null,
@@ -703,6 +775,45 @@ const Globe3D = {
   nasaTextures: null,
   cloudsMesh: null,
   bordersMesh: null,
+  nightMesh: null,
+  showCityLights: true,
+  brightNightMode: true,
+  solarManualHours: null,
+
+  updateSunPosition() {
+    if (!this.sunLight) return;
+    const now = new Date();
+    const liveUtcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+    const effectiveHours = this.solarManualHours !== null ? this.solarManualHours : liveUtcHours;
+
+    // A las 12:00 UTC el Sol está en longitud 0 (Greenwich). Cada hora = 15°
+    const sunLng = -((effectiveHours - 12) * 15);
+    const dayOfYear = Math.floor((now - new Date(Date.UTC(now.getUTCFullYear(), 0, 1))) / 86400000);
+    // Declinación estacional axial
+    const declination = 23.44 * Math.sin(((dayOfYear - 80) * 2 * Math.PI) / 365.25);
+    const sunPos = latLngToVector3(declination, sunLng, 32.0);
+    this.sunLight.position.copy(sunPos);
+
+    if (this.nightMesh && this.nightMesh.material && this.nightMesh.material.uniforms) {
+      this.nightMesh.material.uniforms.sunDirection.value.copy(sunPos).normalize();
+    }
+    if (this.atmosphereMesh && this.atmosphereMesh.material && this.atmosphereMesh.material.uniforms) {
+      this.atmosphereMesh.material.uniforms.sunDirection.value.copy(sunPos).normalize();
+    }
+    if (this.innerAtmosphereMesh && this.innerAtmosphereMesh.material && this.innerAtmosphereMesh.material.uniforms) {
+      this.innerAtmosphereMesh.material.uniforms.sunDirection.value.copy(sunPos).normalize();
+    }
+  },
+
+  updateBorders(countryCode = null) {
+    const code = countryCode || (typeof state !== 'undefined' ? state.selectedCountryCode : 'ARG') || 'ARG';
+    const newTex = createTacticalBordersOverlayTexture(code);
+    this.cachedTextures['borders'] = newTex;
+    if (this.bordersMesh) {
+      this.bordersMesh.material.map = newTex;
+      this.bordersMesh.material.needsUpdate = true;
+    }
+  },
 
   loadNasaTextures() {
     if (this.nasaTextures) return;
@@ -715,17 +826,17 @@ const Globe3D = {
           this.earthMesh.material.needsUpdate = true;
         }
       }),
-      specularMap: loader.load('assets/textures/earth_specular_2048.jpg', (tex) => {
-        tex.anisotropy = 8;
-        if (this.globeTextureMode === 'light' && this.earthMesh) {
-          this.earthMesh.material.specularMap = tex;
-          this.earthMesh.material.needsUpdate = true;
-        }
-      }),
       normalMap: loader.load('assets/textures/earth_normal_2048.jpg', (tex) => {
         tex.anisotropy = 8;
         if (this.globeTextureMode === 'light' && this.earthMesh) {
           this.earthMesh.material.normalMap = tex;
+          this.earthMesh.material.needsUpdate = true;
+        }
+      }),
+      specularMap: loader.load('assets/textures/earth_specular_2048.jpg', (tex) => {
+        tex.anisotropy = 8;
+        if (this.globeTextureMode === 'light' && this.earthMesh) {
+          this.earthMesh.material.specularMap = tex;
           this.earthMesh.material.needsUpdate = true;
         }
       }),
@@ -734,6 +845,13 @@ const Globe3D = {
         if (this.cloudsMesh) {
           this.cloudsMesh.material.map = tex;
           this.cloudsMesh.material.needsUpdate = true;
+        }
+      }),
+      nightMap: loader.load('assets/textures/earth_lights_2048.png', (tex) => {
+        tex.anisotropy = 8;
+        if (this.nightMesh && this.nightMesh.material && this.nightMesh.material.uniforms) {
+          this.nightMesh.material.uniforms.nightMap.value = tex;
+          this.nightMesh.material.needsUpdate = true;
         }
       })
     };
@@ -775,9 +893,8 @@ const Globe3D = {
     if (!this.cachedTextures['dark']) {
       this.cachedTextures['dark'] = createProceduralEarthTexture('dark');
     }
-    if (!this.cachedTextures['borders']) {
-      this.cachedTextures['borders'] = createTacticalBordersOverlayTexture();
-    }
+    const initialCode = (typeof state !== 'undefined' ? state.selectedCountryCode : 'ARG') || 'ARG';
+    this.cachedTextures['borders'] = createTacticalBordersOverlayTexture(initialCode);
 
     const isCurrentLight = document.getElementById('app-body')?.classList.contains('light-theme');
     this.globeTextureMode = isCurrentLight ? 'light' : 'dark';
@@ -848,20 +965,20 @@ const Globe3D = {
     this.scene.add(new THREE.Points(starsGeo, starsMat));
 
     // 5. Earth Sphere (NASA Blue Marble Satellite Photorealism / Modo Táctico AITUE)
-    const earthGeo = new THREE.SphereGeometry(5.0, 64, 64);
+    const earthGeo = new THREE.SphereGeometry(5.0, 96, 96);
     const initialMap = isCurrentLight && this.nasaTextures ? this.nasaTextures.map : this.cachedTextures['dark'];
     const earthMat = new THREE.MeshPhongMaterial({
       map: initialMap,
-      specularMap: isCurrentLight && this.nasaTextures ? this.nasaTextures.specularMap : null,
+      specularMap: null,
       normalMap: isCurrentLight && this.nasaTextures ? this.nasaTextures.normalMap : null,
-      normalScale: new THREE.Vector2(0.85, 0.85),
-      shininess: isCurrentLight ? 22 : 3,
-      specular: new THREE.Color(isCurrentLight ? 0x336699 : 0x050e18)
+      normalScale: isCurrentLight ? new THREE.Vector2(0.60, 0.60) : new THREE.Vector2(0.5, 0.5),
+      shininess: 0,
+      specular: new THREE.Color(0x000000)
     });
     this.earthMesh = new THREE.Mesh(earthGeo, earthMat);
     this.scene.add(this.earthMesh);
 
-    // 5b. Capa de Fronteras Vectoriales Tácticas (Finas líneas translúcidas para ubicación geopolítica)
+    // 5b. Capa de Fronteras Vectoriales Tácticas (Resalta el país activo tanto de día como de noche)
     const bordersGeo = new THREE.SphereGeometry(5.006, 64, 64);
     const bordersMat = new THREE.MeshBasicMaterial({
       map: this.cachedTextures['borders'],
@@ -870,15 +987,15 @@ const Globe3D = {
       depthWrite: false
     });
     this.bordersMesh = new THREE.Mesh(bordersGeo, bordersMat);
-    this.bordersMesh.visible = isCurrentLight;
+    this.bordersMesh.visible = true;
     this.scene.add(this.bordersMesh);
 
     // 5c. Capa de Nubes Atmosféricas Dinámicas (Nubes satelitales auténticas NASA flotando sobre la Tierra)
-    const cloudsGeo = new THREE.SphereGeometry(5.025, 64, 64);
-    const cloudsMat = new THREE.MeshPhongMaterial({
+    const cloudsGeo = new THREE.SphereGeometry(5.035, 96, 96);
+    const cloudsMat = new THREE.MeshLambertMaterial({
       map: this.nasaTextures ? this.nasaTextures.cloudsMap : null,
       transparent: true,
-      opacity: 0.82,
+      opacity: 0.88,
       depthWrite: false,
       blending: THREE.NormalBlending
     });
@@ -886,17 +1003,147 @@ const Globe3D = {
     this.cloudsMesh.visible = isCurrentLight;
     this.scene.add(this.cloudsMesh);
 
-    // 6. Halo Atmosférico Rayleigh (Resplandor azul en la curvatura del horizonte estilo órbita ISS)
-    const atmosGeo = new THREE.SphereGeometry(5.12, 64, 64);
-    const atmosMat = new THREE.MeshBasicMaterial({
-      color: 0x38bdf8,
+    // 5d. Capa de Luces de Ciudades Nocturnas (NASA Black Marble City Lights con brillo dorado/ámbar incandescente)
+    const nightGeo = new THREE.SphereGeometry(5.006, 96, 96);
+    const nightMat = new THREE.ShaderMaterial({
+      uniforms: {
+        nightMap: { value: this.nasaTextures ? this.nasaTextures.nightMap : null },
+        sunDirection: { value: new THREE.Vector3(1, 0, 0) },
+        lightsIntensity: { value: 2.20 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying vec3 vNormalWorld;
+        void main() {
+          vUv = uv;
+          vNormalWorld = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D nightMap;
+        uniform vec3 sunDirection;
+        uniform float lightsIntensity;
+        varying vec2 vUv;
+        varying vec3 vNormalWorld;
+        void main() {
+          float sunDot = dot(vNormalWorld, normalize(sunDirection));
+          // Suave transición natural en el atardecer/crepúsculo
+          float nightFactor = smoothstep(0.08, -0.20, sunDot);
+          vec4 tex = texture2D(nightMap, vUv);
+          // Luces nocturnas doradas y ámbar cálido
+          vec3 cityColor = tex.rgb * vec3(1.75, 1.30, 0.70) * lightsIntensity;
+          gl_FragColor = vec4(cityColor * nightFactor, tex.r * nightFactor * 0.85);
+        }
+      `,
       transparent: true,
-      opacity: isCurrentLight ? 0.20 : 0.0,
-      side: THREE.BackSide
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
     });
-    this.atmosphereMesh = new THREE.Mesh(atmosGeo, atmosMat);
-    this.atmosphereMesh.visible = isCurrentLight;
+    this.nightMesh = new THREE.Mesh(nightGeo, nightMat);
+    this.nightMesh.visible = this.showCityLights;
+    this.scene.add(this.nightMesh);
+
+    // 6a. Halo Atmosférico Exterior (Resplandor de amanecer/atardecer dorado en el limbo y azul Rayleigh como en la foto)
+    const outerAtmosGeo = new THREE.SphereGeometry(5.16, 96, 96);
+    const outerAtmosMat = new THREE.ShaderMaterial({
+      uniforms: {
+        sunDirection: { value: new THREE.Vector3(1, 0, 0) },
+        rimIntensity: { value: 1.85 }
+      },
+      vertexShader: `
+        varying vec3 vNormalWorld;
+        varying vec3 vWorldPosition;
+        void main() {
+          vNormalWorld = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+          vec4 worldPos = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPos.xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 sunDirection;
+        uniform float rimIntensity;
+        varying vec3 vNormalWorld;
+        varying vec3 vWorldPosition;
+        void main() {
+          vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+          vec3 norm = normalize(vNormalWorld);
+          vec3 sunDir = normalize(sunDirection);
+          
+          float fresnel = 1.0 - max(0.0, dot(viewDir, norm));
+          float rim = pow(fresnel, 3.2) * rimIntensity;
+          float sunDot = dot(norm, sunDir);
+          
+          // Efecto de amanecer/atardecer dorado en el limbo solar
+          float sunsetFactor = smoothstep(-0.35, 0.35, sunDot) * (1.0 - smoothstep(0.40, 0.95, sunDot));
+          
+          vec3 blueRayleigh = vec3(0.24, 0.65, 1.0);
+          vec3 goldSunset = vec3(1.0, 0.62, 0.20) * 1.65;
+          vec3 atmosColor = mix(blueRayleigh, goldSunset, sunsetFactor * 0.92);
+          
+          float dayMask = smoothstep(-0.35, 0.25, sunDot);
+          float alpha = rim * (dayMask * 0.92 + 0.08);
+          gl_FragColor = vec4(atmosColor * alpha, alpha);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide,
+      depthWrite: false
+    });
+    this.atmosphereMesh = new THREE.Mesh(outerAtmosGeo, outerAtmosMat);
+    this.atmosphereMesh.visible = false; // Desactivado permanentemente a pedido del usuario (sin luz de fondo)
     this.scene.add(this.atmosphereMesh);
+
+    // 6b. Bruma Atmosférica Interior (Fresnel sobre el borde del disco planetario)
+    const innerAtmosGeo = new THREE.SphereGeometry(5.022, 96, 96);
+    const innerAtmosMat = new THREE.ShaderMaterial({
+      uniforms: {
+        sunDirection: { value: new THREE.Vector3(1, 0, 0) },
+        hazeIntensity: { value: 1.25 }
+      },
+      vertexShader: `
+        varying vec3 vNormalWorld;
+        varying vec3 vWorldPosition;
+        void main() {
+          vNormalWorld = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+          vec4 worldPos = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPos.xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 sunDirection;
+        uniform float hazeIntensity;
+        varying vec3 vNormalWorld;
+        varying vec3 vWorldPosition;
+        void main() {
+          vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+          vec3 norm = normalize(vNormalWorld);
+          vec3 sunDir = normalize(sunDirection);
+          
+          float fresnel = pow(1.0 - max(0.0, dot(viewDir, norm)), 3.6) * hazeIntensity;
+          float sunDot = dot(norm, sunDir);
+          float dayFactor = smoothstep(-0.25, 0.35, sunDot);
+          
+          float sunsetFactor = smoothstep(-0.30, 0.30, sunDot) * (1.0 - smoothstep(0.35, 0.85, sunDot));
+          vec3 blueHaze = vec3(0.20, 0.58, 0.95);
+          vec3 goldHaze = vec3(1.0, 0.58, 0.18) * 1.5;
+          vec3 hazeColor = mix(blueHaze, goldHaze, sunsetFactor * 0.88);
+          
+          float alpha = fresnel * dayFactor;
+          gl_FragColor = vec4(hazeColor * alpha, alpha);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.FrontSide,
+      depthWrite: false
+    });
+    this.innerAtmosphereMesh = new THREE.Mesh(innerAtmosGeo, innerAtmosMat);
+    this.innerAtmosphereMesh.visible = false; // Desactivado permanentemente (sin halos artificiales)
+    this.scene.add(this.innerAtmosphereMesh);
 
     // 7. Minimal Clean Tactical Beacons (Delicate 1px glowing surface rings only)
     this.beaconGroup = new THREE.Group();
@@ -934,22 +1181,14 @@ const Globe3D = {
     this.initSatelliteSwarm();
     this.initSatelliteSwarmEvents();
 
-    // 9. Lighting (Day/Night terminator with upper-left sun and ambient fill matching reference)
-    this.ambientLight = new THREE.AmbientLight(0xffffff, isCurrentLight ? 0.42 : 0.58);
+    // 9. Iluminación Día / Noche Equilibrada (idéntica entre modos táctico y realista)
+    this.ambientLight = new THREE.AmbientLight(0x385070, 0.52);
     this.scene.add(this.ambientLight);
 
-    this.sunLight = new THREE.DirectionalLight(0xffffff, isCurrentLight ? 1.45 : 1.25);
-    this.sunLight.position.set(-14, 7, 8);
+    // Luz solar cálida direccional en el hemisferio diurno (2.40 de intensidad para día radiante)
+    this.sunLight = new THREE.DirectionalLight(0xfffaea, 2.40);
     this.scene.add(this.sunLight);
-
-    this.cameraHeadlight = new THREE.DirectionalLight(0x2F7BFF, 0.22);
-    this.cameraHeadlight.position.set(0, 0, 10);
-    this.camera.add(this.cameraHeadlight);
-    this.scene.add(this.camera);
-
-    const rimLight = new THREE.DirectionalLight(0x00D9FF, 0.0);
-    rimLight.position.set(12, 10, -10);
-    this.scene.add(rimLight);
+    this.updateSunPosition();
 
     // 10. Click Raycaster for Satellites and Earth Descent
     const raycaster = new THREE.Raycaster();
@@ -999,7 +1238,8 @@ const Globe3D = {
                 globeSelect.value = c.code;
               }
               state.selectedCountryCode = c.code || 'ARG';
-              showNotification(`🎯 Enfoque Orbital: ${c.name} (${c.capital})`, 'info');
+              const solarStatus = getLocationDayNightStatus(c.lat, c.lng);
+              showNotification(`🎯 Enfoque Orbital: ${c.name} (${c.capital}) &bull; ${solarStatus.label}`, 'info');
               return;
             }
           }
@@ -1016,6 +1256,8 @@ const Globe3D = {
             globeSelect.value = c.code;
           }
           state.selectedCountryCode = c.code || 'ARG';
+          const solarStatus = getLocationDayNightStatus(c.lat, c.lng);
+          showNotification(`🌐 Coordenadas: ${c.name} &bull; ${solarStatus.label}`, 'info');
         }
       }
     });
@@ -1122,6 +1364,9 @@ const Globe3D = {
       this.cloudsMesh.rotation.y += 0.00030;
     }
 
+    // Actualización de posición del Sol en tiempo real (terminador Día/Noche)
+    this.updateSunPosition();
+
     // Pulse beacon rings
     if (this.beaconRings && this.beaconRings.length > 0) {
       const scale = 1.0 + 0.38 * Math.sin(time * 3.5);
@@ -1180,11 +1425,11 @@ const Globe3D = {
     this.laserLinksGroup = new THREE.Group();
     this.laserLines = [];
 
-    // Helper to generate orbital ring loop
+    // Helper to generate orbital ring loop (trazos finos y etéreos)
     const createOrbitRing = (radius, inc, raan, colorHex, typeName) => {
       const ringPts = [];
-      for (let i = 0; i <= 64; i++) {
-        const th = (i / 64) * Math.PI * 2;
+      for (let i = 0; i <= 96; i++) {
+        const th = (i / 96) * Math.PI * 2;
         const x = radius * (Math.cos(raan) * Math.cos(th) - Math.sin(raan) * Math.sin(th) * Math.cos(inc));
         const y = radius * (Math.sin(th) * Math.sin(inc));
         const z = radius * (Math.sin(raan) * Math.cos(th) + Math.cos(raan) * Math.sin(th) * Math.cos(inc));
@@ -1194,7 +1439,8 @@ const Globe3D = {
       const ringMat = new THREE.LineBasicMaterial({
         color: colorHex,
         transparent: true,
-        opacity: 0.16
+        opacity: 0.16,
+        depthWrite: false
       });
       const ringLine = new THREE.LineLoop(ringGeo, ringMat);
       ringLine.userData = { constellation: typeName };
@@ -1202,25 +1448,26 @@ const Globe3D = {
       return ringLine;
     };
 
-    // Helper to create micro satellite dot
+    // Helper to create micro satellite dot (micro-nodos refinados y elegantes)
     const createSatelliteMesh = (colorHex) => {
       const satObj = new THREE.Group();
-      const dotGeo = new THREE.SphereGeometry(0.042, 8, 8);
+      const dotGeo = new THREE.SphereGeometry(0.022, 8, 8);
       const dotMat = new THREE.MeshBasicMaterial({ color: colorHex });
       satObj.add(new THREE.Mesh(dotGeo, dotMat));
 
-      const haloGeo = new THREE.RingGeometry(0.05, 0.075, 12);
+      const haloGeo = new THREE.RingGeometry(0.028, 0.044, 12);
       const haloMat = new THREE.MeshBasicMaterial({
         color: colorHex,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.65
+        opacity: 0.30,
+        blending: THREE.AdditiveBlending
       });
       satObj.add(new THREE.Mesh(haloGeo, haloMat));
       return satObj;
     };
 
-    // 1. GNSS (42 satellites, yellow #eab308) - 6 planes x 7 satellites
+    // 1. GNSS (42 satellites, Electric Sky Blue #38bdf8) - 6 planes x 7 satellites
     const gnssPlanes = 6;
     const gnssSatsPerPlane = 7;
     const gnssInc = 55 * (Math.PI / 180);
@@ -1228,12 +1475,12 @@ const Globe3D = {
 
     for (let p = 0; p < gnssPlanes; p++) {
       const raan = (p / gnssPlanes) * Math.PI * 2;
-      createOrbitRing(gnssRadius, gnssInc, raan, 0xeab308, 'gnss');
+      createOrbitRing(gnssRadius, gnssInc, raan, 0x38bdf8, 'gnss');
 
       for (let s = 0; s < gnssSatsPerPlane; s++) {
         const satIdNum = 10 + p * 7 + s;
         const initialTheta = (s / gnssSatsPerPlane) * Math.PI * 2 + (p * 0.4);
-        const satObj = createSatelliteMesh(0xeab308);
+        const satObj = createSatelliteMesh(0x38bdf8);
 
         satObj.userData = {
           id: `GNSS-NAVSTAR-${satIdNum}`,
@@ -1258,7 +1505,7 @@ const Globe3D = {
       }
     }
 
-    // 2. Circular / Starlink (27 satellites, cyan-green #34d399) - 3 planes x 9 satellites
+    // 2. Circular / Starlink (27 satellites, Signature Cyan #00f0ff) - 3 planes x 9 satellites
     const circPlanes = 3;
     const circSatsPerPlane = 9;
     const circInc = 53 * (Math.PI / 180);
@@ -1266,12 +1513,12 @@ const Globe3D = {
 
     for (let p = 0; p < circPlanes; p++) {
       const raan = (p / circPlanes) * Math.PI * 2 + Math.PI / 5;
-      createOrbitRing(circRadius, circInc, raan, 0x34d399, 'circular');
+      createOrbitRing(circRadius, circInc, raan, 0x00f0ff, 'circular');
 
       for (let s = 0; s < circSatsPerPlane; s++) {
         const satIdNum = 100 + p * 9 + s;
         const initialTheta = (s / circSatsPerPlane) * Math.PI * 2 + (p * 0.6);
-        const satObj = createSatelliteMesh(0x34d399);
+        const satObj = createSatelliteMesh(0x00f0ff);
 
         satObj.userData = {
           id: `CIRCULAR-ORBIT-${satIdNum}`,
@@ -1296,7 +1543,7 @@ const Globe3D = {
       }
     }
 
-    // 3. MEO (9 satellites, sky blue #0284c7) - 3 planes x 3 satellites
+    // 3. MEO (9 satellites, Celestial Cobalt #60a5fa) - 3 planes x 3 satellites
     const meoPlanes = 3;
     const meoSatsPerPlane = 3;
     const meoInc = 45 * (Math.PI / 180);
@@ -1304,12 +1551,12 @@ const Globe3D = {
 
     for (let p = 0; p < meoPlanes; p++) {
       const raan = (p / meoPlanes) * Math.PI * 2 + Math.PI / 3;
-      createOrbitRing(meoRadius, meoInc, raan, 0x0284c7, 'meo');
+      createOrbitRing(meoRadius, meoInc, raan, 0x60a5fa, 'meo');
 
       for (let s = 0; s < meoSatsPerPlane; s++) {
         const satIdNum = 200 + p * 3 + s;
         const initialTheta = (s / meoSatsPerPlane) * Math.PI * 2;
-        const satObj = createSatelliteMesh(0x0284c7);
+        const satObj = createSatelliteMesh(0x60a5fa);
 
         satObj.userData = {
           id: `MEO-RELAY-${satIdNum}`,
@@ -1334,13 +1581,13 @@ const Globe3D = {
       }
     }
 
-    // 4. Retrograde (1 satellite, pink #ec4899)
+    // 4. Retrograde Polar (1 satellite, Ice White #e0f2fe)
     const retroInc = 135 * (Math.PI / 180);
     const retroRadius = 5.75;
     const retroRaan = Math.PI * 0.8;
-    createOrbitRing(retroRadius, retroInc, retroRaan, 0xec4899, 'retrograde');
+    createOrbitRing(retroRadius, retroInc, retroRaan, 0xe0f2fe, 'retrograde');
 
-    const retroSatObj = createSatelliteMesh(0xec4899);
+    const retroSatObj = createSatelliteMesh(0xe0f2fe);
     retroSatObj.userData = {
       id: 'RETROGRADE-01',
       type: 'retrograde',
@@ -1348,7 +1595,7 @@ const Globe3D = {
       alt: '720 km',
       vel: '26,800 km/h',
       period: '99 min',
-      status: 'Órbita inversa activa'
+      status: 'Órbita polar activa'
     };
     this.satelliteSwarmGroup.add(retroSatObj);
     this.satellites.push({
@@ -1596,79 +1843,102 @@ const Globe3D = {
     if (!this.cachedTextures['dark']) {
       this.cachedTextures['dark'] = createProceduralEarthTexture('dark');
     }
-    if (!this.cachedTextures['borders']) {
-      this.cachedTextures['borders'] = createTacticalBordersOverlayTexture();
-    }
+    const curCode = (typeof state !== 'undefined' ? state.selectedCountryCode : 'ARG') || 'ARG';
+    this.cachedTextures['borders'] = createTacticalBordersOverlayTexture(curCode);
 
     if (this.earthMesh) {
       if (isRealistic) {
         if (this.nasaTextures && this.nasaTextures.map) {
           this.earthMesh.material.map = this.nasaTextures.map;
-          this.earthMesh.material.specularMap = this.nasaTextures.specularMap;
           this.earthMesh.material.normalMap = this.nasaTextures.normalMap;
-          this.earthMesh.material.normalScale = new THREE.Vector2(0.85, 0.85);
+          this.earthMesh.material.normalScale = new THREE.Vector2(0.60, 0.60);
         }
-        this.earthMesh.material.specular = new THREE.Color(0x336699);
-        this.earthMesh.material.shininess = 22;
       } else {
         this.earthMesh.material.map = this.cachedTextures['dark'];
-        this.earthMesh.material.specularMap = null;
         this.earthMesh.material.normalMap = null;
-        this.earthMesh.material.specular = new THREE.Color(0x0e243a);
-        this.earthMesh.material.shininess = 6;
       }
+      // NUNCA specular spotlight ni reflejos quemados
+      this.earthMesh.material.specularMap = null;
+      this.earthMesh.material.specular = new THREE.Color(0x000000);
+      this.earthMesh.material.shininess = 0;
       this.earthMesh.material.needsUpdate = true;
     }
 
     if (this.cloudsMesh) {
       this.cloudsMesh.visible = isRealistic;
+      if (this.nasaTextures && this.nasaTextures.cloudsMap) {
+        this.cloudsMesh.material.map = this.nasaTextures.cloudsMap;
+        this.cloudsMesh.material.needsUpdate = true;
+      }
     }
 
     if (this.bordersMesh) {
-      this.bordersMesh.visible = isRealistic;
+      // SIEMPRE visible para que el país seleccionado resalte con elegancia tanto en táctico como en realista
+      this.bordersMesh.visible = true;
     }
+    this.updateBorders(curCode);
 
+    // NUNCA luces de fondo artificiales ni halos que quemen la imagen
     if (this.atmosphereMesh) {
-      if (isRealistic) {
-        this.atmosphereMesh.visible = true;
-        this.atmosphereMesh.material.color.setHex(0x38bdf8);
-        this.atmosphereMesh.material.opacity = 0.22;
-      } else {
-        this.atmosphereMesh.visible = false;
-        this.atmosphereMesh.material.opacity = 0.0;
+      this.atmosphereMesh.visible = false;
+    }
+    if (this.innerAtmosphereMesh) {
+      this.innerAtmosphereMesh.visible = false;
+    }
+
+    // Iluminación natural equilibrada (noche visible y realista con continentes y mares distinguibles)
+    if (isRealistic) {
+      if (this.ambientLight) {
+        this.ambientLight.color.setHex(0x32445e);
+        this.ambientLight.intensity = this.brightNightMode ? 0.62 : 0.52; // Noche realista: continentes y mares distinguibles
       }
-      this.atmosphereMesh.material.needsUpdate = true;
-    }
-
-    // Luces equilibradas: en modo táctico se aumenta la luz ambiental para que la Tierra no quede tan oscura
-    if (this.ambientLight) {
-      this.ambientLight.intensity = isRealistic ? 0.42 : 0.60;
-    }
-    if (this.sunLight) {
-      this.sunLight.intensity = isRealistic ? 1.45 : 1.25;
-    }
-
-    if (this.cameraHeadlight) {
-      if (isRealistic) {
-        this.cameraHeadlight.color.setHex(0xffffff);
-        this.cameraHeadlight.intensity = 0.14;
-      } else {
-        this.cameraHeadlight.color.setHex(0x38bdf8);
-        this.cameraHeadlight.intensity = 0.35;
+      if (this.sunLight) {
+        this.sunLight.color.setHex(0xfffaee);
+        this.sunLight.intensity = 1.95; // Sol suave natural sin quemar la superficie
+      }
+      if (this.renderer) {
+        this.renderer.setClearColor(0x020408, 1);
+      }
+    } else {
+      if (this.ambientLight) {
+        this.ambientLight.color.setHex(0x385070);
+        this.ambientLight.intensity = this.brightNightMode ? 0.58 : 0.42;
+      }
+      if (this.sunLight) {
+        this.sunLight.color.setHex(0xfffaea);
+        this.sunLight.intensity = 2.40;
+      }
+      if (this.renderer) {
+        this.renderer.setClearColor(0x030509, 1);
       }
     }
 
-    // Entorno 3D: en modo realista ocultamos los lásers y balizas artificiales para máxima pureza fotográfica
+    if (this.nightMesh) {
+      this.nightMesh.visible = this.showCityLights;
+      if (this.nasaTextures && this.nasaTextures.nightMap && this.nightMesh.material.uniforms) {
+        this.nightMesh.material.uniforms.nightMap.value = this.nasaTextures.nightMap;
+        this.nightMesh.material.needsUpdate = true;
+      }
+    }
+    this.updateSunPosition();
+
+    // Entorno 3D: El enjambre satelital y las órbitas se integran con elegancia tanto en táctico como en realista
     if (this.beaconGroup) {
-      this.beaconGroup.visible = !isRealistic;
+      this.beaconGroup.visible = true;
     }
     if (this.laserLinksGroup) {
-      this.laserLinksGroup.visible = !isRealistic && this.showLasers;
+      this.laserLinksGroup.visible = this.showLasers;
+    }
+    if (this.satelliteSwarmGroup) {
+      this.satelliteSwarmGroup.visible = true;
+    }
+    if (this.orbitLinesGroup) {
+      this.orbitLinesGroup.visible = this.showOrbits !== false;
     }
 
     // Fondo espacial estelar profundo
     if (this.renderer) {
-      this.renderer.setClearColor(isRealistic ? 0x02040b : 0x030509, 1);
+      this.renderer.setClearColor(isRealistic ? 0x010204 : 0x030509, 1);
     }
 
     // Sincronizar clases temáticas en el body para adaptar los paneles y HUD circundantes
@@ -2628,27 +2898,13 @@ function updateNavigationHUD(veh) {
   if (etaTimeEl) etaTimeEl.innerText = `${etaMinutes} min`;
   if (etaDistEl) etaDistEl.innerText = `${remainingDistKm} km`;
 
-  if (state.navVoiceEnabled && isNearTurn && state.lastSpokenManeuver !== `${segIdx}-${maneuverText}`) {
-    state.lastSpokenManeuver = `${segIdx}-${maneuverText}`;
-    speakNavInstruction(`En ${distMeters} metros, ${maneuverText.toLowerCase()} hacia ${currentStreet}`);
-  }
 }
 
 function speakNavInstruction(text) {
-  if (!state.navVoiceEnabled) return;
-  try {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'es-ES';
-      utterance.rate = 1.05;
-      utterance.pitch = 1.0;
-      utterance.volume = 0.85;
-      window.speechSynthesis.speak(utterance);
-    } else {
-      playTacticalClick();
-    }
-  } catch (err) {}
+  // Desactivado: Sin síntesis de voz ni locuciones habladas a pedido del usuario
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try { window.speechSynthesis.cancel(); } catch (err) {}
+  }
 }
 
 function openDestinationPreview() {
@@ -3172,7 +3428,6 @@ function triggerCollisionAlert(veh, building) {
     setTimeout(() => navHUD.classList.remove('nav-alert-collision'), 4000);
   }
 
-  speakNavInstruction(`¡Atención! Colisión detectada contra ${building.name}. Vehículo detenido.`);
   showNotification(`💥 COLISIÓN: ${veh.name} impactó contra ${building.name}`, 'danger');
 }
 
@@ -3576,39 +3831,7 @@ function initCameraCanvas() {
       }
     }
 
-    // --- Render Simulated Pedestrians / Humans on Sidewalk ---
-    const p1X = w * 0.74;
-    const p1Y = h * 0.68;
-    const p1H = 50;
-    const p1W = 18;
-
-    drawSimulatedHuman(ctx, p1X, p1Y, p1W, p1H, personWalkPhase, state.camMode);
-
-    // AI & ESP32 Tactical Bounding Box
-    const isPirTriggered = state.esp32.cam01.pirDetected;
-    drawTacticalBoundingBox(ctx, p1X - p1W/2 - 5, p1Y - p1H - 4, p1W + 10, p1H + 8, {
-      label: isPirTriggered ? 'HUMANO (PIR ALERTA)' : 'HUMANO #01',
-      confidence: '98.4%',
-      distance: '3.8m',
-      temp: state.camMode === 'thermal' ? '36.8°C' : null,
-      isAlert: isPirTriggered
-    });
-
-    // 2nd Human if PIR triggered or 2 persons
-    if (isPirTriggered || state.esp32.cam01.personsCount > 1) {
-      const p2X = w * 0.28;
-      const p2Y = h * 0.70;
-      const p2H = 46;
-      const p2W = 16;
-      drawSimulatedHuman(ctx, p2X, p2Y, p2W, p2H, personWalkPhase + 1.2, state.camMode);
-      drawTacticalBoundingBox(ctx, p2X - p2W/2 - 5, p2Y - p2H - 4, p2W + 10, p2H + 8, {
-        label: 'HUMANO #02',
-        confidence: '96.2%',
-        distance: '5.1m',
-        temp: state.camMode === 'thermal' ? '37.0°C' : null,
-        isAlert: true
-      });
-    }
+    // (Personas en vereda y voces eliminadas a pedido del usuario)
 
     // Car Hood in Foreground (Spy Dashcam POV)
     ctx.fillStyle = state.camMode === 'thermal' ? '#1e293b' : '#0f172a';
@@ -4375,6 +4598,9 @@ function setupEventListeners() {
       state.selectedCountryCode = code;
       const surfaceSelect = document.getElementById('surface-country-select');
       if (surfaceSelect) surfaceSelect.value = code;
+      if (typeof Globe3D !== 'undefined' && Globe3D.updateBorders) {
+        Globe3D.updateBorders(code);
+      }
 
       const c = GLOBAL_COUNTRIES[code];
       if (c && Globe3D.camera) {
@@ -4403,6 +4629,93 @@ function setupEventListeners() {
   if (globeStyleBtn) {
     globeStyleBtn.addEventListener('click', () => {
       Globe3D.toggleGlobeTexture();
+    });
+  }
+
+  // Solar Day/Night Simulation Controls
+  const solarSlider = document.getElementById('solar-time-slider');
+  const solarHourDisplay = document.getElementById('solar-hour-display');
+  const btnSolarLive = document.getElementById('btn-solar-live');
+  const btnSolarDay = document.getElementById('btn-solar-day');
+  const btnSolarNight = document.getElementById('btn-solar-night');
+  const chkCityLights = document.getElementById('chk-city-lights');
+  const chkBrightNight = document.getElementById('chk-bright-night');
+
+  const updatePresetUI = (activeBtn) => {
+    [btnSolarLive, btnSolarDay, btnSolarNight].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+    if (activeBtn) activeBtn.classList.add('active');
+  };
+
+  if (solarSlider) {
+    solarSlider.addEventListener('input', (e) => {
+      const h = parseFloat(e.target.value);
+      Globe3D.solarManualHours = h;
+      updatePresetUI(null);
+      const hrs = Math.floor(h);
+      const mins = Math.floor((h - hrs) * 60);
+      const strH = String(hrs).padStart(2, '0');
+      const strM = String(mins).padStart(2, '0');
+      if (solarHourDisplay) solarHourDisplay.innerText = `${strH}:${strM} UTC`;
+      Globe3D.updateSunPosition();
+    });
+  }
+
+  if (btnSolarDay) {
+    btnSolarDay.addEventListener('click', () => {
+      Globe3D.solarManualHours = 14.0; // 14:00 UTC = Mediodía en Argentina / América
+      updatePresetUI(btnSolarDay);
+      if (solarSlider) solarSlider.value = 14.0;
+      if (solarHourDisplay) solarHourDisplay.innerText = '14:00 UTC (Día)';
+      Globe3D.updateSunPosition();
+      showNotification('☀️ Modo Día: 14:00 UTC - Iluminación diurna plena', 'info');
+    });
+  }
+
+  if (btnSolarNight) {
+    btnSolarNight.addEventListener('click', () => {
+      Globe3D.solarManualHours = 2.0; // 02:00 UTC = Noche en Argentina / América
+      updatePresetUI(btnSolarNight);
+      if (solarSlider) solarSlider.value = 2.0;
+      if (solarHourDisplay) solarHourDisplay.innerText = '02:00 UTC (Noche)';
+      Globe3D.updateSunPosition();
+      showNotification('🌙 Modo Noche: 02:00 UTC - Luces de ciudades y fronteras visibles', 'info');
+    });
+  }
+
+  if (btnSolarLive) {
+    btnSolarLive.addEventListener('click', () => {
+      Globe3D.solarManualHours = null;
+      updatePresetUI(btnSolarLive);
+      const now = new Date();
+      const liveH = now.getUTCHours() + now.getUTCMinutes() / 60;
+      if (solarSlider) solarSlider.value = liveH;
+      const strH = String(now.getUTCHours()).padStart(2, '0');
+      const strM = String(now.getUTCMinutes()).padStart(2, '0');
+      if (solarHourDisplay) solarHourDisplay.innerText = `${strH}:${strM} UTC`;
+      Globe3D.updateSunPosition();
+      showNotification('🛰️ Sincronizado con el Sol y Reloj UTC en vivo', 'info');
+    });
+  }
+
+  if (chkCityLights) {
+    chkCityLights.addEventListener('change', (e) => {
+      Globe3D.showCityLights = e.target.checked;
+      if (Globe3D.nightMesh) {
+        Globe3D.nightMesh.visible = e.target.checked;
+      }
+      showNotification(e.target.checked ? '🌃 Luces de ciudades nocturnas activadas' : 'Luces nocturnas desactivadas', 'info');
+    });
+  }
+
+  if (chkBrightNight) {
+    chkBrightNight.addEventListener('change', (e) => {
+      Globe3D.brightNightMode = e.target.checked;
+      if (Globe3D.ambientLight) {
+        Globe3D.ambientLight.intensity = e.target.checked ? 0.58 : 0.40;
+      }
+      showNotification(e.target.checked ? '💡 Modo Noche Clara activado: Visibilidad completa de continentes' : 'Contraste nocturno estándar', 'info');
     });
   }
 
@@ -4502,12 +4815,15 @@ function setupEventListeners() {
   const navVoiceBtn = document.getElementById('btn-toggle-nav-voice');
   if (navVoiceBtn) {
     navVoiceBtn.addEventListener('click', () => {
-      state.navVoiceEnabled = !state.navVoiceEnabled;
+      state.navVoiceEnabled = false;
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+      }
       const icon = document.getElementById('nav-voice-icon');
       if (icon) {
-        icon.className = state.navVoiceEnabled ? 'fa-solid fa-volume-high text-cyan' : 'fa-solid fa-volume-xmark text-muted';
+        icon.className = 'fa-solid fa-volume-xmark text-muted';
       }
-      showNotification(state.navVoiceEnabled ? '🔊 Guía por voz activada' : '🔇 Guía por voz silenciada', 'info');
+      showNotification('🔇 Voces e instrucciones habladas desactivadas', 'info');
     });
   }
 
@@ -4932,7 +5248,6 @@ function switchProjectionMode(mode) {
 // --- LIVE UTC CLOCK TICKER ---
 function updateUTCClock() {
   const el = document.getElementById('sat-utc-clock');
-  if (!el) return;
   const now = new Date();
   const day = String(now.getUTCDate()).padStart(2, '0');
   const month = String(now.getUTCMonth() + 1).padStart(2, '0');
@@ -4940,7 +5255,16 @@ function updateUTCClock() {
   const hours = String(now.getUTCHours()).padStart(2, '0');
   const minutes = String(now.getUTCMinutes()).padStart(2, '0');
   const seconds = String(now.getUTCSeconds()).padStart(2, '0');
-  el.innerText = `${day}/${month}/${year} ${hours}:${minutes}:${seconds} UTC`;
+  if (el) el.innerText = `${day}/${month}/${year} ${hours}:${minutes}:${seconds} UTC`;
+
+  // Sincronizar lectura del slider solar si está en modo en vivo
+  if (typeof Globe3D !== 'undefined' && Globe3D.solarManualHours === null) {
+    const solarSlider = document.getElementById('solar-time-slider');
+    const solarHourDisplay = document.getElementById('solar-hour-display');
+    const liveH = now.getUTCHours() + now.getUTCMinutes() / 60;
+    if (solarSlider && document.activeElement !== solarSlider) solarSlider.value = liveH;
+    if (solarHourDisplay) solarHourDisplay.innerText = `${hours}:${minutes} UTC`;
+  }
 }
 
 // --- SATELLITEMAP.SPACE CONTROLS & DOCK WIRING ---
@@ -5072,6 +5396,9 @@ function initSatellitemapComponents() {
   if (navCountrySelect) {
     navCountrySelect.onchange = (e) => {
       const code = e.target.value;
+      if (typeof Globe3D !== 'undefined' && Globe3D.updateBorders) {
+        Globe3D.updateBorders(code);
+      }
       if (GLOBAL_COUNTRIES && GLOBAL_COUNTRIES[code]) {
         const c = GLOBAL_COUNTRIES[code];
         if (document.body.classList.contains('mode-globe-active')) {

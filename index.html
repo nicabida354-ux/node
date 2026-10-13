@@ -22,7 +22,7 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2.9">
 
   <!-- Three.js & OrbitControls for 3D Earth Globe -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -88,19 +88,24 @@
       <div class="nav-country-box">
         <select id="nav-country-quick-select" class="nav-country-select" title="Saltar a país o continente">
           <option value="ARG">🇦🇷 Argentina</option>
-          <option value="ESP">🇪🇸 España</option>
+          <option value="BRA">🇧🇷 Brasil</option>
+          <option value="CHL">🇨🇱 Chile</option>
+          <option value="URY">🇺🇾 Uruguay</option>
+          <option value="PRY">🇵🇾 Paraguay</option>
+          <option value="BOL">🇧🇴 Bolivia</option>
+          <option value="PER">🇵🇪 Perú</option>
+          <option value="COL">🇨🇴 Colombia</option>
+          <option value="VEN">🇻🇪 Venezuela</option>
           <option value="MEX">🇲🇽 México</option>
           <option value="USA">🇺🇸 EE.UU.</option>
-          <option value="COL">🇨🇴 Colombia</option>
-          <option value="CHL">🇨🇱 Chile</option>
-          <option value="BRA">🇧🇷 Brasil</option>
-          <option value="PER">🇵🇪 Perú</option>
-          <option value="URY">🇺🇾 Uruguay</option>
+          <option value="ESP">🇪🇸 España</option>
           <option value="FRA">🇫🇷 Francia</option>
           <option value="DEU">🇩🇪 Alemania</option>
           <option value="ITA">🇮🇹 Italia</option>
           <option value="GBR">🇬🇧 Reino Unido</option>
           <option value="JPN">🇯🇵 Japón</option>
+          <option value="CHN">🇨🇳 China</option>
+          <option value="AUS">🇦🇺 Australia</option>
         </select>
       </div>
 
@@ -465,6 +470,36 @@
               <i class="fa-solid fa-earth-americas"></i> <span>3D Realista</span>
             </button>
           </div>
+
+          <!-- Panel de Control Solar & Claridad Día / Noche -->
+          <div class="brand-hud-solar-box" id="brand-hud-solar-box">
+            <div class="solar-box-header">
+              <span class="solar-title"><i class="fa-solid fa-sun text-amber"></i> Ciclo Día / Noche</span>
+              <div class="solar-presets-group">
+                <button class="btn-solar-preset" id="btn-solar-day" title="Ver de Día (14:00 UTC - Pleno sol en América)">
+                  <i class="fa-solid fa-sun text-amber"></i> <span>Día</span>
+                </button>
+                <button class="btn-solar-preset" id="btn-solar-night" title="Ver de Noche (02:00 UTC - Luces de ciudades)">
+                  <i class="fa-solid fa-moon text-cyan"></i> <span>Noche</span>
+                </button>
+                <button class="btn-solar-preset active" id="btn-solar-live" title="Sincronizar con el Sol y hora UTC real en vivo">
+                  <i class="fa-solid fa-satellite sat-pulse-icon"></i> <span>En Vivo</span>
+                </button>
+              </div>
+            </div>
+            <div class="solar-slider-row">
+              <input type="range" id="solar-time-slider" min="0" max="24" step="0.25" value="14" title="Mover la hora solar manualmente">
+              <span class="solar-hour-badge font-mono" id="solar-hour-display">14:00 UTC</span>
+            </div>
+            <div class="solar-options-row">
+              <label class="solar-chk" title="Mostrar luces de ciudades de noche">
+                <input type="checkbox" id="chk-city-lights" checked> <span>🌃 Luces Ciudades</span>
+              </label>
+              <label class="solar-chk" title="Asegura que el lado nocturno tenga excelente visibilidad sin verse negro">
+                <input type="checkbox" id="chk-bright-night" checked> <span>💡 Noche Clara</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <!-- Centro de Cobertura Satelital y Telemetría AITUE (Superior Derecha) -->
@@ -590,19 +625,23 @@
                 <i class="fa-solid fa-globe text-cyan"></i>
                 <select id="surface-country-select" class="tactical-country-select-sm" title="Cambiar a otro país">
                   <option value="ARG">🇦🇷 Argentina</option>
-                  <option value="ESP">🇪🇸 España</option>
+                  <option value="BRA">🇧🇷 Brasil</option>
+                  <option value="CHL">🇨🇱 Chile</option>
+                  <option value="URY">🇺🇾 Uruguay</option>
+                  <option value="PRY">🇵🇾 Paraguay</option>
+                  <option value="BOL">🇧🇴 Bolivia</option>
+                  <option value="PER">🇵🇪 Perú</option>
+                  <option value="COL">🇨🇴 Colombia</option>
+                  <option value="VEN">🇻🇪 Venezuela</option>
                   <option value="MEX">🇲🇽 México</option>
                   <option value="USA">🇺🇸 EE.UU.</option>
-                  <option value="COL">🇨🇴 Colombia</option>
-                  <option value="CHL">🇨🇱 Chile</option>
-                  <option value="BRA">🇧🇷 Brasil</option>
-                  <option value="PER">🇵🇪 Perú</option>
-                  <option value="URY">🇺🇾 Uruguay</option>
+                  <option value="ESP">🇪🇸 España</option>
                   <option value="FRA">🇫🇷 Francia</option>
                   <option value="DEU">🇩🇪 Alemania</option>
                   <option value="ITA">🇮🇹 Italia</option>
                   <option value="GBR">🇬🇧 Reino Unido</option>
                   <option value="JPN">🇯🇵 Japón</option>
+                  <option value="CHN">🇨🇳 China</option>
                   <option value="CAN">🇨🇦 Canadá</option>
                   <option value="AUS">🇦🇺 Australia</option>
                 </select>
@@ -710,8 +749,8 @@
               <span class="eta-time" id="nav-eta-time">3 min</span>
               <span class="eta-dist" id="nav-eta-dist">1.4 km</span>
             </div>
-            <button class="btn-nav-audio" id="btn-toggle-nav-voice" title="Activar/Silenciar Instrucciones de Voz">
-              <i class="fa-solid fa-volume-high text-cyan" id="nav-voice-icon"></i>
+            <button class="btn-nav-audio" id="btn-toggle-nav-voice" title="Instrucciones de voz desactivadas">
+              <i class="fa-solid fa-volume-xmark text-muted" id="nav-voice-icon"></i>
             </button>
             <button class="btn-nav-preview" id="btn-open-dest-preview" title="Previsualizar Edificio de Destino y Acceso">
               <i class="fa-solid fa-building-circle-check"></i> <span>Destino 3D</span>
@@ -1248,7 +1287,7 @@
   <!-- World Political Borders GeoJSON Data -->
   <script src="data/world-geojson.js"></script>
   <!-- Main Application Logic -->
-  <script src="app.js"></script>
+  <script src="app.js?v=2.9"></script>
 </body>
 
 </html>

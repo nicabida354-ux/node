@@ -5131,6 +5131,153 @@ body.mode-globe-active .map-overlay-bar {
   box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
 }
 
+/* Brand HUD Solar & Day/Night Controller */
+.brand-hud-solar-box {
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.solar-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.solar-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.solar-presets-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.btn-solar-preset {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(0, 240, 255, 0.20);
+  color: #94a3b8;
+  font-family: var(--font-main);
+  font-size: 0.60rem;
+  font-weight: 600;
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.2s ease;
+}
+
+.btn-solar-preset:hover {
+  background: rgba(0, 240, 255, 0.15);
+  color: #fff;
+  border-color: rgba(0, 240, 255, 0.50);
+}
+
+.btn-solar-preset.active {
+  background: rgba(0, 240, 255, 0.20);
+  border-color: #00f0ff;
+  color: #00f0ff;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.35);
+}
+
+.btn-solar-preset#btn-solar-day.active {
+  background: rgba(245, 158, 11, 0.20);
+  border-color: #f59e0b;
+  color: #fcd34d;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.35);
+}
+
+.btn-solar-preset#btn-solar-night.active {
+  background: rgba(56, 189, 248, 0.20);
+  border-color: #38bdf8;
+  color: #7dd3fc;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
+}
+
+.btn-solar-preset#btn-solar-live.active {
+  background: rgba(34, 197, 94, 0.20);
+  border-color: #22c55e;
+  color: #4ade80;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.35);
+}
+
+.solar-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solar-slider-row input[type="range"] {
+  flex: 1;
+  height: 5px;
+  background: linear-gradient(to right, #1e293b, #f59e0b, #38bdf8, #1e293b);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+.solar-slider-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f59e0b;
+  border: 2px solid #fff;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
+  cursor: pointer;
+}
+
+.solar-hour-badge {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #f59e0b;
+  background: rgba(15, 23, 42, 0.85);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  min-width: 62px;
+  text-align: center;
+}
+
+.solar-options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.solar-chk {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.solar-chk input[type="checkbox"] {
+  accent-color: #00f0ff;
+  cursor: pointer;
+  width: 13px;
+  height: 13px;
+}
+
 /* =====================================================================
    CENTRO DE COBERTURA SATELITAL Y TELEMETRÍA AITUE (SUPERIOR DERECHA)
    ===================================================================== */
@@ -5269,10 +5416,10 @@ body.mode-globe-active .map-overlay-bar {
   border-radius: 50%;
   display: inline-block;
 }
-.dot-swatch.gnss { background: #eab308; box-shadow: 0 0 6px #eab308; }
-.dot-swatch.circular { background: #34d399; box-shadow: 0 0 6px #34d399; }
-.dot-swatch.meo { background: #0284c7; box-shadow: 0 0 6px #0284c7; }
-.dot-swatch.retrograde { background: #ec4899; box-shadow: 0 0 6px #ec4899; }
+.dot-swatch.gnss { background: #38bdf8; box-shadow: 0 0 6px rgba(56, 189, 248, 0.7); }
+.dot-swatch.circular { background: #00f0ff; box-shadow: 0 0 6px rgba(0, 240, 255, 0.7); }
+.dot-swatch.meo { background: #60a5fa; box-shadow: 0 0 6px rgba(96, 165, 250, 0.7); }
+.dot-swatch.retrograde { background: #e0f2fe; box-shadow: 0 0 6px rgba(224, 242, 254, 0.7); }
 
 .orbit-layers-guide {
   display: flex;
@@ -5302,10 +5449,10 @@ body.mode-globe-active .map-overlay-bar {
   border-radius: 2px;
   flex-shrink: 0;
 }
-.guide-color-bar.gnss { background: #eab308; }
-.guide-color-bar.circular { background: #34d399; }
-.guide-color-bar.meo { background: #0284c7; }
-.guide-color-bar.retrograde { background: #ec4899; }
+.guide-color-bar.gnss { background: #38bdf8; box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+.guide-color-bar.circular { background: #00f0ff; box-shadow: 0 0 8px rgba(0, 240, 255, 0.4); }
+.guide-color-bar.meo { background: #60a5fa; box-shadow: 0 0 8px rgba(96, 165, 250, 0.4); }
+.guide-color-bar.retrograde { background: #e0f2fe; box-shadow: 0 0 8px rgba(224, 242, 254, 0.4); }
 
 .guide-content {
   display: flex;
