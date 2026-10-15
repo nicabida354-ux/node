@@ -1104,7 +1104,7 @@ body.mode-globe-active.light-theme #globe-3d-container {
   visibility: visible;
   opacity: 1;
   pointer-events: auto;
-  background: #02040a !important;
+  background: radial-gradient(ellipse at 50% 50%, #06152e 0%, #030a1c 38%, #01040f 72%, #000205 100%) !important;
 }
 
 #globe-3d-container canvas {
@@ -2383,25 +2383,39 @@ body.light-theme .leaflet-bar a:hover {
 }
 
 .tactical-vehicle-icon {
-  width: 38px;
-  height: 38px;
-  background: #0284c7;
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle, #0284c7 20%, #0369a1 100%);
   border: 2px solid #38bdf8;
   border-radius: 50%;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.7);
-  transition: transform 0.3s ease;
+  font-size: 1.05rem;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.8), inset 0 0 8px rgba(255, 255, 255, 0.3);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  z-index: 5;
 }
 
 .tactical-vehicle-icon.deviated {
-  background: #dc2626;
+  background: radial-gradient(circle, #dc2626 20%, #991b1b 100%);
   border-color: #f87171;
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.9);
-  animation: alertMarker 1s infinite alternate;
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.95);
+  animation: alertMarker 0.8s infinite alternate;
+}
+
+.tactical-vehicle-icon.accident {
+  background: radial-gradient(circle, #ff0055 20%, #880022 100%) !important;
+  border-color: #ff4d8d !important;
+  box-shadow: 0 0 32px rgba(255, 0, 85, 1) !important;
+  animation: accidentStrobe 0.35s infinite alternate !important;
+}
+
+@keyframes accidentStrobe {
+  0% { transform: scale(1); filter: brightness(1); }
+  100% { transform: scale(1.22); filter: brightness(1.6); }
 }
 
 @keyframes alertMarker {
@@ -2409,16 +2423,109 @@ body.light-theme .leaflet-bar a:hover {
   to { transform: scale(1.18); }
 }
 
-.tactical-marker-label {
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid #334155;
+/* Maritime Vehicle (Boat / Lancha) Marker */
+.tactical-boat-icon {
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle, #0284c7 30%, #075985 100%);
+  border: 2px solid #00f0ff;
+  border-radius: 50% 50% 35% 35%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.85);
+  transition: transform 0.25s ease;
+  position: relative;
+  z-index: 5;
+}
+
+/* Navigational Lights: Red on Port (left), Green on Starboard (right) */
+.tactical-boat-icon::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 12px;
+  width: 5px;
+  height: 5px;
+  background: #ef4444;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.tactical-boat-icon::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  top: 12px;
+  width: 5px;
+  height: 5px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981;
+}
+
+/* Dynamic Maritime Water Wake behind vessel */
+.tactical-boat-wake {
+  position: absolute;
+  width: 46px;
+  height: 65px;
+  top: 48%;
+  left: calc(50% - 23px);
+  background: radial-gradient(ellipse at top, rgba(0, 240, 255, 0.45) 0%, rgba(56, 189, 248, 0.2) 40%, transparent 80%);
+  transform-origin: center top;
+  pointer-events: none;
+  filter: blur(1.5px);
+  animation: boatWakeRipple 1.3s infinite ease-out;
+  z-index: 1;
+}
+
+@keyframes boatWakeRipple {
+  0% { transform: scaleY(0.6) scaleX(0.7); opacity: 0.9; }
+  100% { transform: scaleY(1.3) scaleX(1.4); opacity: 0; }
+}
+
+/* Sidewalk / Grass Accident Pulse Alert Beacon */
+.accident-impact-pulse {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
   color: #fff;
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  padding: 1px 6px;
-  border-radius: 3px;
-  margin-top: 3px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #fca5a5;
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.95);
   white-space: nowrap;
+  animation: accidentAlarmBounce 0.75s infinite alternate;
+  z-index: 25;
+  pointer-events: none;
+}
+
+@keyframes accidentAlarmBounce {
+  from { transform: translateX(-50%) translateY(0); }
+  to { transform: translateX(-50%) translateY(-6px); }
+}
+
+.tactical-marker-label {
+  background: rgba(10, 16, 30, 0.92);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: #f1f5f9;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  margin-top: 4px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+  letter-spacing: 0.3px;
+  z-index: 6;
 }
 
 /* Scrollbar customization */
@@ -3438,20 +3545,73 @@ body.light-theme .btn-secondary {
   display: none !important;
 }
 
-.map-btn.btn-buildings-3d {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 0 10px;
-  width: auto;
-  gap: 6px;
+/* Quick Sharp Tile Mode Switcher Pills (Oscuro / Claro / Terrestre Táctico) */
+.map-tiles-quick-pills {
+  display: flex;
+  align-items: center;
+  background: rgba(8, 14, 28, 0.88);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 3px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
 }
 
-.map-btn.btn-buildings-3d.active {
+.map-tile-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  font-family: var(--font-mono);
+  font-size: 0.73rem;
+  font-weight: 700;
+  padding: 5px 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.map-tile-pill i {
+  font-size: 0.82rem;
+}
+
+.map-tile-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.map-tile-pill.active {
   background: rgba(0, 240, 255, 0.22);
   border-color: var(--accent-cyan);
   color: var(--accent-cyan);
-  box-shadow: 0 0 14px rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.45);
+}
+
+body.light-theme .map-tiles-quick-pills {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .map-tile-pill {
+  color: #475569;
+}
+
+body.light-theme .map-tile-pill:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+body.light-theme .map-tile-pill.active {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
 }
 
 .scope-btn.btn-nav3d.active {
@@ -3733,25 +3893,30 @@ body.light-theme .btn-secondary {
   to { transform: rotate(360deg); }
 }
 
-/* 3. Cono de Faros 3D del Vehículo en Conducción Nocturna */
+/* 3. Cono de Faros del Vehículo (Iluminación Dinámica sobre la Calzada) */
 .vehicle-headlight-beam {
   position: absolute;
-  width: 70px;
-  height: 120px;
+  width: 75px;
+  height: 125px;
   bottom: 50%;
-  left: calc(50% - 35px);
-  background: linear-gradient(to top, rgba(0, 240, 255, 0.42) 0%, rgba(255, 255, 255, 0.18) 25%, transparent 100%);
-  clip-path: polygon(30% 100%, 70% 100%, 100% 0%, 0% 0%);
+  left: calc(50% - 37.5px);
+  background: linear-gradient(to top, rgba(0, 240, 255, 0.55) 0%, rgba(255, 255, 255, 0.28) 25%, transparent 100%);
+  clip-path: polygon(32% 100%, 68% 100%, 100% 0%, 0% 0%);
   transform-origin: center bottom;
   pointer-events: none;
   filter: blur(2px);
-  z-index: -1;
-  display: none;
+  z-index: 2;
+  display: block;
 }
 
-.mode-inmersive-3d .vehicle-headlight-beam,
-.mode-3d-tilt .vehicle-headlight-beam {
-  display: block;
+body.light-theme .vehicle-headlight-beam {
+  background: linear-gradient(to top, rgba(2, 132, 199, 0.35) 0%, rgba(2, 132, 199, 0.12) 30%, transparent 100%);
+}
+
+/* Máxima Nitidez de Teselas y Vectorial Retina */
+.leaflet-tile-container img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 /* 4. Modal de Previsualización de Destino (Street Preview 3D) */
@@ -4916,7 +5081,7 @@ body.light-theme .sat-tool-btn.active {
 }
 
 body.mode-globe-active .aitue-brand-hud {
-  display: block !important;
+  display: none !important;
 }
 
 body.mode-globe-active .satellitemap-watermark {
@@ -5857,5 +6022,632 @@ body.globe-theme-realistic .orbit-pill.active {
   color: #fff;
 }
 
+/* =====================================================================
+   ESTILOS TÁCTICOS: COLLAPSIBLE BRAND HUD & CONTROLES LIMPIOS
+   ===================================================================== */
+.brand-hud-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-hud-collapse {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  color: var(--accent-cyan);
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: all 0.2s ease;
+}
+
+.btn-hud-collapse:hover {
+  background: rgba(0, 240, 255, 0.2);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.aitue-brand-hud.collapsed {
+  width: auto;
+  min-width: 270px;
+  padding: 8px 12px;
+}
+
+.aitue-brand-hud.collapsed .brand-hud-header {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.aitue-brand-hud.collapsed .brand-hud-collapsible-content {
+  display: none !important;
+}
+
+.aitue-brand-hud.collapsed #brand-hud-chevron {
+  transform: rotate(180deg);
+}
+
+/* =====================================================================
+   FLOATING PICTURE-IN-PICTURE (PiP) SPY CAM MONITOR
+   ===================================================================== */
+.floating-pip-cam {
+  position: absolute;
+  bottom: 80px;
+  right: 24px;
+  z-index: 850;
+  width: 300px;
+  background: rgba(4, 9, 20, 0.92);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.85), 0 0 20px rgba(0, 240, 255, 0.12);
+  overflow: hidden;
+  user-select: none;
+  animation: fadeIn 0.25s ease;
+  transition: all 0.25s ease;
+}
+
+.floating-pip-cam:hover {
+  border-color: rgba(0, 240, 255, 0.55);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9), 0 0 28px rgba(0, 240, 255, 0.22);
+}
+
+.pip-cam-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(15, 23, 42, 0.75);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pip-cam-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pip-cam-id {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: 0.5px;
+}
+
+.pip-cam-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pip-tool-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+}
+
+.pip-tool-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pip-cam-screen {
+  position: relative;
+  width: 100%;
+  height: 168px;
+  background: #000;
+}
+
+#pip-camera-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.pip-cam-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.pip-hud-top, .pip-hud-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.62rem;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+}
+
+.pip-cam-bar {
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  background: rgba(8, 14, 28, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pip-mode-mini {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  padding: 3px 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.pip-mode-mini.active, .pip-mode-mini:hover {
+  color: var(--accent-cyan);
+  border-color: rgba(0, 240, 255, 0.4);
+  background: rgba(0, 240, 255, 0.12);
+}
+
+/* =====================================================================
+   SHORTCUTS MODAL
+   ===================================================================== */
+.shortcuts-modal-card {
+  max-width: 620px;
+  background: rgba(6, 12, 24, 0.94);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 32px rgba(0, 240, 255, 0.15);
+}
+
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+.shortcut-item kbd {
+  background: linear-gradient(180deg, #1e293b, #0f172a);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 3px 7px;
+  border-radius: 4px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+  min-width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sc-desc {
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  line-height: 1.3;
+}
+
+.sc-desc b {
+  color: #fff;
+}
+
+.shortcuts-tip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 240, 255, 0.06);
+  border: 1px dashed rgba(0, 240, 255, 0.3);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* =====================================================================
+   TACTICAL STATUS DOCK & SONAR PING STYLES
+   ===================================================================== */
+.micro-dock-stat {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin: 0 4px;
+}
+
+.satellitemap-micro-dock .micro-dock-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  padding: 5px 9px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.satellitemap-micro-dock .micro-dock-btn:hover {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: var(--accent-cyan);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+/* 2D Leaflet Radar Ripple Ring */
+.tactical-radar-pulse-leaflet {
+  border: 2px solid #00f0ff;
+  background: rgba(0, 240, 255, 0.15);
+  border-radius: 50%;
+  animation: radarRippleLeaflet 1.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes radarRippleLeaflet {
+  0% {
+    transform: scale(0.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+
+/* =====================================================================
+   TACTICAL TOAST NOTIFICATIONS
+   ===================================================================== */
+.tactical-toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.tactical-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(10, 16, 30, 0.95);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #f1f5f9;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 240, 255, 0.2);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: auto;
+  max-width: 440px;
+}
+
+.tactical-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tactical-toast.toast-danger {
+  border-color: #ef4444;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(239, 68, 68, 0.4);
+}
+
+.tactical-toast.toast-warning {
+  border-color: #f59e0b;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(245, 158, 11, 0.4);
+}
+
+.tactical-toast.toast-success {
+  border-color: #10b981;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+
+
+/* =====================================================================
+   ULTRA-MINIMALIST TACTICAL CAPSULE DOCK (PALETA CIBERNÉTICA OSCURA)
+   ===================================================================== */
+body.mode-globe-active #btn-top-radar-ping,
+body.mode-globe-active #btn-top-pip-cam,
+body.mode-globe-active #btn-top-shortcuts,
+body.mode-globe-active #btn-toggle-sound,
+body.mode-globe-active .satellitemap-utc-bar {
+  display: none !important;
+}
+
+body.mode-globe-active .satellitemap-micro-dock {
+  display: flex !important;
+  position: absolute !important;
+  bottom: 14px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 600 !important;
+  background: rgba(3, 7, 16, 0.90) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(0, 240, 255, 0.22) !important;
+  border-radius: 24px !important;
+  padding: 4px 10px !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85), 0 0 16px rgba(0, 240, 255, 0.08) !important;
+  align-items: center !important;
+  gap: 3px !important;
+  user-select: none !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  width: auto !important;
+  max-width: 95vw !important;
+}
+
+body.mode-globe-active .satellitemap-micro-dock:hover {
+  border-color: rgba(0, 240, 255, 0.40) !important;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.90), 0 0 22px rgba(0, 240, 255, 0.16) !important;
+}
+
+/* 1. Segmented Micro-Pill (Táctico / Realista) */
+.tactical-segmented-pill {
+  display: flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.tactical-pill-opt {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  width: 28px;
+  height: 26px;
+  border-radius: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  transition: all 0.2s ease;
+}
+
+.tactical-pill-opt:hover {
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tactical-pill-opt.active {
+  background: rgba(0, 240, 255, 0.20);
+  color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+}
+
+/* Hairline Dividers */
+.tactical-dock-sep {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.10);
+  margin: 0 3px;
+}
+
+/* Minimalist Icon Buttons */
+.tactical-dock-icon {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #64748b;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.tactical-dock-icon:hover {
+  color: #e2e8f0;
+  background: rgba(0, 240, 255, 0.08);
+  border-color: rgba(0, 240, 255, 0.20);
+}
+
+.tactical-dock-icon.active {
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.16);
+  border-color: rgba(0, 240, 255, 0.40);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
+}
+
+.tactical-icon-zen:hover {
+  color: #f87171 !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.30) !important;
+}
+
+.tactical-icon-zen.active {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.22) !important;
+  border-color: rgba(239, 68, 68, 0.50) !important;
+}
+
+/* Micro Telemetry UTC Clock */
+.tactical-mini-clock {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.06);
+  border: 1px solid rgba(0, 240, 255, 0.18);
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  letter-spacing: 0.4px;
+}
+
+/* Solar Popover (Clean Military Cyber Card) */
+.tactical-flyout-wrap {
+  position: relative;
+}
+
+.tactical-solar-card {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 245px;
+  background: rgba(3, 7, 16, 0.96);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(0, 240, 255, 0.26);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.90), 0 0 20px rgba(0, 240, 255, 0.10);
+  z-index: 700;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tactical-solar-card.hidden {
+  display: none !important;
+}
+
+.tactical-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tactical-card-title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tactical-card-x {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+.tactical-card-x:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tactical-presets-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+}
+
+.tactical-btn-preset {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  color: #94a3b8;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 5px 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.tactical-btn-preset:hover {
+  background: rgba(0, 240, 255, 0.10);
+  color: #fff;
+}
+
+.tactical-btn-preset.active {
+  background: rgba(0, 240, 255, 0.18);
+  border-color: rgba(0, 240, 255, 0.40);
+  color: #00f0ff;
+}
+
+.tactical-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tactical-range {
+  flex: 1;
+  accent-color: #00f0ff;
+  height: 3px;
+  cursor: pointer;
+}
+
+.tactical-slider-val {
+  font-size: 0.68rem;
+  color: var(--accent-cyan);
+  min-width: 58px;
+  text-align: right;
+}
+
+.tactical-check-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.66rem;
+  color: #94a3b8;
+  font-family: var(--font-mono);
+}
+
+.tactical-chk {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.tactical-chk input {
+  accent-color: #00f0ff;
+  cursor: pointer;
+}
 
 

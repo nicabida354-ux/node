@@ -22,7 +22,7 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <link rel="stylesheet" href="styles.css?v=2.9">
+  <link rel="stylesheet" href="styles.css?v=3.66">
 
   <!-- Three.js & OrbitControls for 3D Earth Globe -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -34,7 +34,8 @@
   <!-- Top Tactical SatelliteMap Header -->
   <header class="top-nav" id="top-nav">
     <div class="brand-section">
-      <div class="satellitemap-brand" onclick="switchProjectionMode('globe')" title="AITUE NEXUS+ // Si lo conectamos, lo ves">
+      <div class="satellitemap-brand" onclick="switchProjectionMode('globe')"
+        title="AITUE NEXUS+ // Si lo conectamos, lo ves">
         <div class="brand-hex-icon">
           <i class="fa-solid fa-satellite text-cyan sat-pulse-icon"></i>
         </div>
@@ -47,23 +48,17 @@
 
     <!-- Menú Desplegable Centrado -->
     <nav class="satellitemap-nav-menu" id="satellitemap-nav-menu">
-      <button class="nav-menu-btn" id="nav-btn-fleet" onclick="openDrawerTab('left', 'vehicles')">
-        <i class="fa-solid fa-truck-shield"></i> <span>Flota</span> <i class="fa-solid fa-chevron-down caret"></i>
+      <button class="nav-menu-btn" id="nav-btn-fleet" onclick="openDrawerTab('left', 'vehicles')" title="Unidades de Flota">
+        <i class="fa-solid fa-truck-shield"></i> <span>Flota</span>
       </button>
-      <button class="nav-menu-btn" id="nav-btn-devices" onclick="openDrawerTab('left', 'devices')">
-        <i class="fa-solid fa-satellite"></i> <span>Hardware</span> <i class="fa-solid fa-chevron-down caret"></i>
+      <button class="nav-menu-btn" id="nav-btn-devices" onclick="openDrawerTab('left', 'devices')" title="Hardware GPS y Cámaras">
+        <i class="fa-solid fa-satellite"></i> <span>Hardware</span>
       </button>
-      <button class="nav-menu-btn" id="nav-btn-esp32" onclick="openDrawerTab('left', 'esp32')">
-        <i class="fa-solid fa-microchip text-cyan"></i> <span>ESP32 IoT</span> <i class="fa-solid fa-chevron-down caret"></i>
+      <button class="nav-menu-btn" id="nav-btn-esp32" onclick="openDrawerTab('left', 'esp32')" title="Telemetría ESP32 IoT">
+        <i class="fa-solid fa-microchip text-cyan"></i> <span>ESP32 IoT</span>
       </button>
-      <button class="nav-menu-btn" id="nav-btn-cam" onclick="openDrawerTab('right', 'cam')">
-        <i class="fa-solid fa-video text-amber"></i> <span>Cámara</span> <i class="fa-solid fa-chevron-down caret"></i>
-      </button>
-      <button class="nav-menu-btn" id="nav-btn-cockpit" onclick="openDrawerTab('right', 'cockpit')">
-        <i class="fa-solid fa-gauge-high text-cyan"></i> <span>Cabina HUD</span> <i class="fa-solid fa-chevron-down caret"></i>
-      </button>
-      <button class="nav-menu-btn" id="nav-btn-alerts" onclick="openDrawerTab('right', 'alerts')">
-        <i class="fa-solid fa-bell text-red"></i> <span>Alertas</span> <span class="nav-alert-badge" id="nav-alert-counter">0</span> <i class="fa-solid fa-chevron-down caret"></i>
+      <button class="nav-menu-btn" id="nav-btn-alerts" onclick="openDrawerTab('right', 'alerts')" title="Centro de Alertas">
+        <i class="fa-solid fa-bell text-red"></i> <span>Alertas</span> <span class="nav-alert-badge" id="nav-alert-counter">0</span>
       </button>
     </nav>
 
@@ -86,33 +81,34 @@
 
       <!-- Selector Rápido de País -->
       <div class="nav-country-box">
-        <select id="nav-country-quick-select" class="nav-country-select" title="Saltar a país o continente">
-          <option value="ARG">🇦🇷 Argentina</option>
-          <option value="BRA">🇧🇷 Brasil</option>
-          <option value="CHL">🇨🇱 Chile</option>
-          <option value="URY">🇺🇾 Uruguay</option>
-          <option value="PRY">🇵🇾 Paraguay</option>
-          <option value="BOL">🇧🇴 Bolivia</option>
-          <option value="PER">🇵🇪 Perú</option>
-          <option value="COL">🇨🇴 Colombia</option>
-          <option value="VEN">🇻🇪 Venezuela</option>
-          <option value="MEX">🇲🇽 México</option>
-          <option value="USA">🇺🇸 EE.UU.</option>
-          <option value="ESP">🇪🇸 España</option>
-          <option value="FRA">🇫🇷 Francia</option>
-          <option value="DEU">🇩🇪 Alemania</option>
-          <option value="ITA">🇮🇹 Italia</option>
-          <option value="GBR">🇬🇧 Reino Unido</option>
-          <option value="JPN">🇯🇵 Japón</option>
-          <option value="CHN">🇨🇳 China</option>
-          <option value="AUS">🇦🇺 Australia</option>
+        <select id="nav-country-quick-select" class="nav-country-select" title="Seleccionar ciudad para monitorear">
+          <option value="USA" selected>🇺🇸 Manhattan (NY)</option>
+          <option value="ARG">🇦🇷 Buenos Aires</option>
+          <option value="BRA">🇧🇷 São Paulo</option>
+          <option value="ESP">🇪🇸 Madrid</option>
+          <option value="FRA">🇫🇷 París</option>
+          <option value="GBR">🇬🇧 Londres</option>
+          <option value="DEU">🇩🇪 Berlín</option>
+          <option value="ITA">🇮🇹 Roma</option>
+          <option value="JPN">🇯🇵 Tokio</option>
+          <option value="CHL">🇨🇱 Santiago</option>
+          <option value="URY">🇺🇾 Montevideo</option>
+          <option value="COL">🇨🇴 Bogotá</option>
+          <option value="MEX">🇲🇽 Ciudad de México</option>
+          <option value="CHN">🇨🇳 Pekín</option>
+          <option value="AUS">🇦🇺 Sídney</option>
+          <option value="EGY">🇪🇬 El Cairo</option>
+          <option value="RUS">🇷🇺 Moscú</option>
         </select>
       </div>
 
-      <!-- Iconos Rápidos -->
-      <button class="btn-nav-icon" id="btn-toggle-sound" title="Alarma Sonora"><i class="fa-solid fa-volume-high" id="sound-icon"></i></button>
-      <button class="btn-nav-icon" id="btn-toggle-theme" title="Modo Claro / Oscuro"><i class="fa-solid fa-sun" id="theme-icon"></i></button>
-      <button class="btn-nav-icon btn-sos-icon" id="btn-panic-sos" title="Pánico SOS"><i class="fa-solid fa-triangle-exclamation"></i></button>
+      <!-- Iconos Rápidos y Herramientas Tácticas -->
+      <button class="btn-nav-icon" id="btn-toggle-sound" title="Alarma Sonora"><i class="fa-solid fa-volume-high"
+          id="sound-icon"></i></button>
+      <button class="btn-nav-icon" id="btn-toggle-theme" title="Modo Claro / Oscuro"><i class="fa-solid fa-sun"
+          id="theme-icon"></i></button>
+      <button class="btn-nav-icon btn-sos-icon" id="btn-panic-sos" title="Pánico SOS"><i
+          class="fa-solid fa-triangle-exclamation"></i></button>
 
       <!-- Botón Menú Móvil -->
       <button class="btn-nav-icon mobile-burger-btn" id="btn-mobile-burger" title="Abrir Menú de Opciones">
@@ -124,7 +120,8 @@
   <!-- Main Command Center Grid -->
   <main class="dashboard-grid" id="dashboard-grid">
     <!-- Floating Quick Restore Button (visible only in Solo Mapa or Solo Cámara mode) -->
-    <button class="floating-restore-badge" id="btn-restore-view-floating" title="Volver a la vista completa de la cabina">
+    <button class="floating-restore-badge" id="btn-restore-view-floating"
+      title="Volver a la vista completa de la cabina">
       <i class="fa-solid fa-compress"></i> <span>Restaurar cabina completa</span>
     </button>
 
@@ -135,7 +132,8 @@
           <i class="fa-solid fa-truck-shield text-cyan"></i>
           <span class="drawer-title" id="drawer-left-title">Flota y Dispositivos</span>
         </div>
-        <button class="drawer-close-btn" id="btn-close-drawer-left" onclick="closeAllDrawers()" title="Cerrar panel y despejar mapa">
+        <button class="drawer-close-btn" id="btn-close-drawer-left" onclick="closeAllDrawers()"
+          title="Cerrar panel y despejar mapa">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -209,6 +207,7 @@
           <select id="active-route-select" class="tactical-select">
             <option value="corredor-norte">Corredor Norte (Base Logística -> Aeropuerto)</option>
             <option value="ruta-custodia">Ruta Custodia Centro (Banco Central -> Bóveda 2)</option>
+            <option value="ruta-fluvial">Patrullaje Fluvial y Costero (Río de la Plata)</option>
           </select>
         </div>
 
@@ -248,10 +247,14 @@
 
         <div class="route-actions-group">
           <button class="btn-secondary-full" id="btn-test-normal-route">
-            <i class="fa-solid fa-play"></i> Simular Recorrido Normal
+            <i class="fa-solid fa-play"></i> Simular Recorrido Normal (Calle)
           </button>
           <button class="btn-danger-full" id="btn-test-deviate-route">
-            <i class="fa-solid fa-triangle-exclamation"></i> Forzar Desvío de Ruta (Prueba Alerta)
+            <i class="fa-solid fa-triangle-exclamation"></i> Simular Despiste a Vereda / Pastizal
+          </button>
+          <button class="btn-action-full mt-1" id="btn-restore-route"
+            style="display:none; background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #fff;">
+            <i class="fa-solid fa-road"></i> 🛠️ Reincorporar Vehículo a la Calzada
           </button>
           <button class="btn-action-full mt-2 btn-whatsapp-sim" id="btn-sim-dispatch">
             <i class="fa-brands fa-whatsapp"></i> Simular Despacho WhatsApp Central
@@ -265,7 +268,8 @@
           <h3><i class="fa-solid fa-microchip text-cyan"></i> Red de sensores ESP32</h3>
           <span class="count-badge count-esp32" id="esp32-node-count-badge">3 Nodos Online</span>
         </div>
-        <p class="panel-hint">Monitoreo de movimiento, calor corporal y presencia humana mediante microcontroladores ESP32 en cabina y carga.</p>
+        <p class="panel-hint">Monitoreo de movimiento, calor corporal y presencia humana mediante microcontroladores
+          ESP32 en cabina y carga.</p>
 
         <!-- ESP32 Node Cards -->
         <div class="esp32-nodes-list" id="esp32-nodes-container">
@@ -386,9 +390,11 @@
             <button class="terminal-clear" id="btn-clear-esp32-log">Limpiar</button>
           </div>
           <div class="terminal-body font-mono" id="esp32-log-terminal">
-            <div class="term-line text-cyan">[INIT] Gateway ESP32 inicializado en ws://rhino-sentinel.local:8080/esp32</div>
+            <div class="term-line text-cyan">[INIT] Gateway ESP32 inicializado en ws://rhino-sentinel.local:8080/esp32
+            </div>
             <div class="term-line text-green">[ESP32-CAM-01] Handshake OK (IP: 192.168.1.145, PIR: STANDBY)</div>
-            <div class="term-line text-green">[ESP32-RADAR-02] mmWave LD2410 calibrado a 6m (Presencia Humana: LISTA)</div>
+            <div class="term-line text-green">[ESP32-RADAR-02] mmWave LD2410 calibrado a 6m (Presencia Humana: LISTA)
+            </div>
             <div class="term-line text-green">[ESP32-THERM-03] Matriz AMG8833 en bus I2C 0x69 (22.4°C)</div>
           </div>
         </div>
@@ -417,93 +423,60 @@
         </div>
 
         <!-- AITUE Brand Cockpit HUD (Superior Izquierda) -->
-        <div class="aitue-brand-hud" id="aitue-brand-hud">
+        <div class="aitue-brand-hud collapsed" id="aitue-brand-hud">
           <div class="brand-hud-header">
             <div class="brand-hud-logo-wrap">
               <div class="brand-hud-hex"><i class="fa-solid fa-satellite text-cyan sat-pulse-icon"></i></div>
               <div class="brand-hud-title-col">
-                <div class="brand-hud-title">AITUE <span class="brand-hud-plus">NEXUS<span class="text-cyan">+</span></span></div>
+                <div class="brand-hud-title">AITUE <span class="brand-hud-plus">NEXUS<span
+                      class="text-cyan">+</span></span></div>
                 <div class="brand-hud-slogan">"Si lo conectamos, lo ves"</div>
               </div>
             </div>
-            <div class="brand-hud-pill">
-              <span class="hud-live-dot"></span> <span>Enlace ULTRA+ Activo</span>
+            <div class="brand-hud-controls-group">
+              <div class="brand-hud-pill">
+                <span class="hud-live-dot"></span> <span>Enlace ULTRA+</span>
+              </div>
+              <button class="btn-hud-collapse" id="btn-toggle-brand-hud"
+                title="Minimizar / Expandir panel de telemetría">
+                <i class="fa-solid fa-chevron-up" id="brand-hud-chevron"></i>
+              </button>
             </div>
           </div>
-
-          <div class="brand-hud-metrics">
-            <div class="hud-metric-chip" title="Dispositivos y satélites enlazados a la red global">
-              <i class="fa-solid fa-satellite-dish text-cyan"></i>
-              <div class="hmc-data">
-                <span class="hmc-val" id="hud-stat-sats">79</span>
-                <span class="hmc-label">Nodos en órbita</span>
+          <div class="brand-hud-collapsible-content" id="brand-hud-collapsible-content">
+            <div class="brand-hud-metrics">
+              <div class="hud-metric-chip" title="Dispositivos y satélites enlazados a la red global">
+                <i class="fa-solid fa-satellite-dish text-cyan"></i>
+                <div class="hmc-data">
+                  <span class="hmc-val" id="hud-stat-sats">79</span>
+                  <span class="hmc-label">Nodos en órbita</span>
+                </div>
               </div>
-            </div>
-            <div class="hud-metric-chip" title="Unidades móviles monitoreadas en tiempo real">
-              <i class="fa-solid fa-truck-shield text-green"></i>
-              <div class="hmc-data">
-                <span class="hmc-val" id="hud-stat-fleets">2</span>
-                <span class="hmc-label">Flota en línea</span>
+              <div class="hud-metric-chip" title="Unidades móviles monitoreadas en tiempo real">
+                <i class="fa-solid fa-truck-shield text-green"></i>
+                <div class="hmc-data">
+                  <span class="hmc-val" id="hud-stat-fleets">2</span>
+                  <span class="hmc-label">Flota en línea</span>
+                </div>
               </div>
-            </div>
-            <div class="hud-metric-chip" title="Sensores IoT ESP32 (Presencia, PIR, Radar, Térmico)">
-              <i class="fa-solid fa-microchip text-amber"></i>
-              <div class="hmc-data">
-                <span class="hmc-val" id="hud-stat-iot">3</span>
-                <span class="hmc-label">Nodos ESP32 IoT</span>
+              <div class="hud-metric-chip" title="Sensores IoT ESP32 (Presencia, PIR, Radar, Térmico)">
+                <i class="fa-solid fa-microchip text-amber"></i>
+                <div class="hmc-data">
+                  <span class="hmc-val" id="hud-stat-iot">3</span>
+                  <span class="hmc-label">Nodos ESP32 IoT</span>
+                </div>
               </div>
-            </div>
-            <div class="hud-metric-chip" title="Latencia media de transmisión por enlace satelital LEO">
-              <i class="fa-solid fa-bolt text-purple"></i>
-              <div class="hmc-data">
-                <span class="hmc-val">23 ms</span>
-                <span class="hmc-label">Latencia LEO</span>
+              <div class="hud-metric-chip" title="Latencia media de transmisión por enlace satelital LEO">
+                <i class="fa-solid fa-bolt text-purple"></i>
+                <div class="hmc-data">
+                  <span class="hmc-val">23 ms</span>
+                  <span class="hmc-label">Latencia LEO</span>
+                </div>
               </div>
             </div>
           </div>
-
-          <div class="brand-hud-toggle-row">
-            <button class="btn-hud-texture active" id="btn-hud-mode-tactical" onclick="setGlobeModeExplicit('dark')" title="Modo Táctico AITUE (Cyber azul con fronteras y cuadrícula cobriza)">
-              <i class="fa-solid fa-shield-halved"></i> <span>3D Táctico AITUE</span>
-            </button>
-            <button class="btn-hud-texture" id="btn-hud-mode-real" onclick="setGlobeModeExplicit('light')" title="Modo 3D Realista (Fotografía satelital con relieve, nubes y océanos)">
-              <i class="fa-solid fa-earth-americas"></i> <span>3D Realista</span>
-            </button>
-          </div>
-
-          <!-- Panel de Control Solar & Claridad Día / Noche -->
-          <div class="brand-hud-solar-box" id="brand-hud-solar-box">
-            <div class="solar-box-header">
-              <span class="solar-title"><i class="fa-solid fa-sun text-amber"></i> Ciclo Día / Noche</span>
-              <div class="solar-presets-group">
-                <button class="btn-solar-preset" id="btn-solar-day" title="Ver de Día (14:00 UTC - Pleno sol en América)">
-                  <i class="fa-solid fa-sun text-amber"></i> <span>Día</span>
-                </button>
-                <button class="btn-solar-preset" id="btn-solar-night" title="Ver de Noche (02:00 UTC - Luces de ciudades)">
-                  <i class="fa-solid fa-moon text-cyan"></i> <span>Noche</span>
-                </button>
-                <button class="btn-solar-preset active" id="btn-solar-live" title="Sincronizar con el Sol y hora UTC real en vivo">
-                  <i class="fa-solid fa-satellite sat-pulse-icon"></i> <span>En Vivo</span>
-                </button>
-              </div>
-            </div>
-            <div class="solar-slider-row">
-              <input type="range" id="solar-time-slider" min="0" max="24" step="0.25" value="14" title="Mover la hora solar manualmente">
-              <span class="solar-hour-badge font-mono" id="solar-hour-display">14:00 UTC</span>
-            </div>
-            <div class="solar-options-row">
-              <label class="solar-chk" title="Mostrar luces de ciudades de noche">
-                <input type="checkbox" id="chk-city-lights" checked> <span>🌃 Luces Ciudades</span>
-              </label>
-              <label class="solar-chk" title="Asegura que el lado nocturno tenga excelente visibilidad sin verse negro">
-                <input type="checkbox" id="chk-bright-night" checked> <span>💡 Noche Clara</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Centro de Cobertura Satelital y Telemetría AITUE (Superior Derecha) -->
-        <div class="satellitemap-orbit-card aitue-telemetry-card" id="satellitemap-orbit-card">
+        </div><!-- Centro de Cobertura Satelital y Telemetría AITUE (Superior Derecha) -->
+        <div class="satellitemap-orbit-card aitue-telemetry-card hidden" id="satellitemap-orbit-card">
           <div class="orbit-card-header">
             <div class="orbit-card-title-group">
               <i class="fa-solid fa-satellite-dish text-cyan"></i>
@@ -513,28 +486,35 @@
               </div>
             </div>
             <div class="orbit-card-controls">
-              <button class="orbit-card-btn" id="btn-toggle-orbit-theme" title="Alternar estilo: Táctico / Tierra Real"><i class="fa-solid fa-circle-half-stroke text-cyan"></i></button>
-              <button class="orbit-card-btn" id="btn-toggle-orbit-card" title="Minimizar panel"><i class="fa-solid fa-chevron-up" id="orbit-toggle-icon"></i></button>
-              <button class="orbit-card-btn" onclick="document.getElementById('satellitemap-orbit-card').classList.toggle('hidden')" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+              <button class="orbit-card-btn" id="btn-toggle-orbit-card" title="Minimizar panel"><i
+                  class="fa-solid fa-chevron-up" id="orbit-toggle-icon"></i></button>
+              <button class="orbit-card-btn"
+                onclick="document.getElementById('satellitemap-orbit-card').classList.toggle('hidden')"
+                title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
             </div>
           </div>
 
           <div class="orbit-card-body" id="orbit-card-body">
             <!-- Píldoras de Filtro Rápido -->
             <div class="orbit-filter-pills">
-              <button class="orbit-pill active" onclick="filterAitueNetwork('all')" id="btn-filter-all" title="Ver todos los satélites en órbita">
+              <button class="orbit-pill active" onclick="filterAitueNetwork('all')" id="btn-filter-all"
+                title="Ver todos los satélites en órbita">
                 <span>Todos (79)</span>
               </button>
-              <button class="orbit-pill" onclick="filterAitueNetwork('gnss')" id="btn-filter-gnss" title="Aislar satélites GNSS para rastreo de flotas">
+              <button class="orbit-pill" onclick="filterAitueNetwork('gnss')" id="btn-filter-gnss"
+                title="Aislar satélites GNSS para rastreo de flotas">
                 <span class="dot-swatch gnss"></span> <span>GNSS (42)</span>
               </button>
-              <button class="orbit-pill" onclick="filterAitueNetwork('circular')" id="btn-filter-circular" title="Aislar satélites Starlink LEO para internet y video">
+              <button class="orbit-pill" onclick="filterAitueNetwork('circular')" id="btn-filter-circular"
+                title="Aislar satélites Starlink LEO para internet y video">
                 <span class="dot-swatch circular"></span> <span>Starlink (27)</span>
               </button>
-              <button class="orbit-pill" onclick="filterAitueNetwork('meo')" id="btn-filter-meo" title="Aislar satélites MEO de enlace industrial">
+              <button class="orbit-pill" onclick="filterAitueNetwork('meo')" id="btn-filter-meo"
+                title="Aislar satélites MEO de enlace industrial">
                 <span class="dot-swatch meo"></span> <span>MEO (9)</span>
               </button>
-              <button class="orbit-pill" onclick="filterAitueNetwork('retrograde')" id="btn-filter-retro" title="Aislar órbita polar para zonas extremas">
+              <button class="orbit-pill" onclick="filterAitueNetwork('retrograde')" id="btn-filter-retro"
+                title="Aislar órbita polar para zonas extremas">
                 <span class="dot-swatch retrograde"></span> <span>Polar (1)</span>
               </button>
             </div>
@@ -544,15 +524,18 @@
               <div class="guide-item" onclick="filterAitueNetwork('gnss')" title="Clic para filtrar GNSS">
                 <div class="guide-color-bar gnss"></div>
                 <div class="guide-content">
-                  <div class="guide-title"><b>GNSS / GPS de Flota</b> <span class="guide-count">42 satélites</span></div>
-                  <p class="guide-desc">Posicionamiento en tiempo real para vehículos, escoltas y activos fijos con precisión submétrica.</p>
+                  <div class="guide-title"><b>GNSS / GPS de Flota</b> <span class="guide-count">42 satélites</span>
+                  </div>
+                  <p class="guide-desc">Posicionamiento en tiempo real para vehículos, escoltas y activos fijos con
+                    precisión submétrica.</p>
                 </div>
               </div>
 
               <div class="guide-item" onclick="filterAitueNetwork('circular')" title="Clic para filtrar Starlink LEO">
                 <div class="guide-color-bar circular"></div>
                 <div class="guide-content">
-                  <div class="guide-title"><b>Baja Órbita LEO (Starlink)</b> <span class="guide-count">27 satélites</span></div>
+                  <div class="guide-title"><b>Baja Órbita LEO (Starlink)</b> <span class="guide-count">27
+                      satélites</span></div>
                   <p class="guide-desc">Streaming de cámaras espía y datos en vivo en rutas sin cobertura celular.</p>
                 </div>
               </div>
@@ -560,7 +543,8 @@
               <div class="guide-item" onclick="filterAitueNetwork('meo')" title="Clic para filtrar MEO Industrial">
                 <div class="guide-color-bar meo"></div>
                 <div class="guide-content">
-                  <div class="guide-title"><b>Relevo Industrial MEO</b> <span class="guide-count">9 satélites</span></div>
+                  <div class="guide-title"><b>Relevo Industrial MEO</b> <span class="guide-count">9 satélites</span>
+                  </div>
                   <p class="guide-desc">Enlace robusto para centros logísticos, bases remotas, minería y agro.</p>
                 </div>
               </div>
@@ -617,74 +601,52 @@
               <div class="map-status-chip">
                 <span class="pulse-indicator"></span>
                 <span id="map-tracking-status">Seguimiento en vivo</span>
-                <span class="map-location-breadcrumb" id="map-location-breadcrumb">📍 Buenos Aires &bull; Sudamérica</span>
+                <span class="map-location-breadcrumb" id="map-location-breadcrumb">📍 Buenos Aires &bull;
+                  Sudamérica</span>
               </div>
 
-              <!-- Country Quick Jumper in 2D Surface Mode -->
-              <div class="surface-country-bar">
-                <i class="fa-solid fa-globe text-cyan"></i>
-                <select id="surface-country-select" class="tactical-country-select-sm" title="Cambiar a otro país">
-                  <option value="ARG">🇦🇷 Argentina</option>
-                  <option value="BRA">🇧🇷 Brasil</option>
-                  <option value="CHL">🇨🇱 Chile</option>
-                  <option value="URY">🇺🇾 Uruguay</option>
-                  <option value="PRY">🇵🇾 Paraguay</option>
-                  <option value="BOL">🇧🇴 Bolivia</option>
-                  <option value="PER">🇵🇪 Perú</option>
-                  <option value="COL">🇨🇴 Colombia</option>
-                  <option value="VEN">🇻🇪 Venezuela</option>
-                  <option value="MEX">🇲🇽 México</option>
-                  <option value="USA">🇺🇸 EE.UU.</option>
-                  <option value="ESP">🇪🇸 España</option>
-                  <option value="FRA">🇫🇷 Francia</option>
-                  <option value="DEU">🇩🇪 Alemania</option>
-                  <option value="ITA">🇮🇹 Italia</option>
-                  <option value="GBR">🇬🇧 Reino Unido</option>
-                  <option value="JPN">🇯🇵 Japón</option>
-                  <option value="CHN">🇨🇳 China</option>
-                  <option value="CAN">🇨🇦 Canadá</option>
-                  <option value="AUS">🇦🇺 Australia</option>
-                </select>
-                <button class="btn-deploy-country" id="btn-deploy-country" title="Mudar vehículos y patrullar en este país">
-                  <i class="fa-solid fa-location-arrow"></i> Desplegar
-                </button>
-              </div>
             </div>
 
-            <!-- Right Controls: Dedicated Map Dark/Light Mode Button + Tile Style + Quick Actions -->
+            <!-- Right Controls: Quick Sharp Tile Mode Switcher Pills (Oscuro, Claro, Terrestre) + Tactical Tools -->
             <div class="map-actions-dock">
-              <!-- Botón Prominente de Modo Oscuro / Claro del Mapa -->
-              <button class="map-theme-toggle-btn active" id="btn-toggle-map-dark" title="Alternar entre Mapa Oscuro y Mapa Claro">
-                <i class="fa-solid fa-moon text-cyan"></i>
-                <span id="map-dark-btn-text">Mapa oscuro</span>
-              </button>
+              <!-- Píldoras de Cambio de Capa con Retina HD (Oscuro / Claro / Terrestre Táctico) -->
+              <div class="map-tiles-quick-pills" id="map-tiles-quick-pills"
+                title="Estilo de Superficie de Alta Nitidez">
+                <button class="map-tile-pill active" id="pill-tile-dark" data-mode="dark"
+                  title="Modo Oscuro Cyber HD (Calles nítidas y contraste)">
+                  <i class="fa-solid fa-moon"></i> <span>Oscuro</span>
+                </button>
+                <button class="map-tile-pill" id="pill-tile-light" data-mode="light"
+                  title="Modo Claro Urbano HD (Calzadas, veredas y avenidas)">
+                  <i class="fa-solid fa-sun"></i> <span>Claro</span>
+                </button>
+                <button class="map-tile-pill" id="pill-tile-sat" data-mode="sat"
+                  title="Modo Terrestre Táctico (Satélite HD + Trazado de Calles)">
+                  <i class="fa-solid fa-satellite"></i> <span>Terrestre</span>
+                </button>
+              </div>
 
-              <select id="map-tile-style-select" class="tactical-layer-select" title="Estilo y Capa del Mapa">
+              <!-- Select oculto para sincronización programática -->
+              <select id="map-tile-style-select" class="tactical-layer-select" style="display:none;"
+                title="Estilo y Capa del Mapa">
                 <option value="dark" selected>🌑 3D Cyber Oscuro HD (CartoDB)</option>
-                <option value="esriDark">🔘 3D Oscuro Gris Táctico (Esri Canvas)</option>
-                <option value="sat">🛰️ 3D Vista Satelital HD (Esri World Imagery)</option>
-                <option value="googleStreet">🗺️ Callejero Claro (Google/Esri Street)</option>
-                <option value="street">🌐 OpenStreetMap Mundial</option>
+                <option value="light">☀️ Calzada Clara HD (CartoDB Positron)</option>
+                <option value="sat">🛰️ Terrestre Táctico (Satélite HD + Vías)</option>
+                <option value="esriDark">🔘 Gris Táctico (Esri Canvas)</option>
+                <option value="googleStreet">🗺️ Callejero (Esri Street)</option>
               </select>
-              <button class="map-btn btn-3d-tilt" id="btn-toggle-3d-tilt" title="Alternar Elementos y Bloques 3D">
-                <i class="fa-solid fa-cube text-cyan"></i> <span>3D</span>
-              </button>
-              <button class="map-btn btn-buildings-3d active" id="btn-toggle-3d-buildings" title="Activar/Desactivar Edificios 3D">
-                <i class="fa-solid fa-city text-cyan"></i> <span>Edificios 3D</span>
-              </button>
-              <button class="map-btn btn-bridges-3d active" id="btn-toggle-3d-bridges" title="Activar/Desactivar Puentes y Viaductos 3D">
-                <i class="fa-solid fa-archway text-cyan"></i> <span>Puentes 3D</span>
-              </button>
-              <button class="map-btn" id="btn-recenter" title="Re-centrar en el vehículo">
+
+              <button class="map-btn" id="btn-recenter" title="Re-centrar en el vehículo seleccionado">
                 <i class="fa-solid fa-crosshairs"></i>
               </button>
-              <button class="map-btn" id="btn-toggle-route-corridor" title="Mostrar/Ocultar pasillo de tolerancia">
+              <button class="map-btn" id="btn-toggle-route-corridor" title="Mostrar/Ocultar pasillo de tolerancia vial">
                 <i class="fa-solid fa-draw-polygon"></i>
               </button>
-              <button class="map-btn" id="btn-toggle-checkpoints" title="Mostrar Checkpoints">
+              <button class="map-btn" id="btn-toggle-checkpoints" title="Mostrar/Ocultar Checkpoints">
                 <i class="fa-solid fa-location-dot"></i>
               </button>
-              <button class="map-btn" id="btn-map-expand-solo" title="Despejar interfaz y ver solo el mapa a pantalla completa">
+              <button class="map-btn" id="btn-map-expand-solo"
+                title="Despejar interfaz y ver solo el mapa a pantalla completa">
                 <i class="fa-solid fa-expand"></i>
               </button>
             </div>
@@ -693,10 +655,6 @@
           <!-- Second Row: Geo Scopes Navigator Floating Centered -->
           <div class="geo-scope-bar-wrapper">
             <div class="geo-scope-bar">
-              <button class="scope-btn" id="scope-btn-globe"
-                title="Salir al Espacio // Ver Planeta Tierra 3D Rotativo">
-                <i class="fa-solid fa-globe text-cyan"></i> <span>Planeta 3D</span>
-              </button>
               <button class="scope-btn" id="scope-btn-region" title="Ver Región">
                 <i class="fa-solid fa-map"></i> <span>Región</span>
               </button>
@@ -706,11 +664,9 @@
               <button class="scope-btn active" id="scope-btn-veh" title="Seguir Vehículo en Calle">
                 <i class="fa-solid fa-crosshairs"></i> <span>Vehículo</span>
               </button>
-              <button class="scope-btn btn-nav3d" id="scope-btn-nav3d" title="Navegación 3D Inmersiva: Cámara de seguimiento vehicular">
+              <button class="scope-btn btn-nav3d" id="scope-btn-nav3d"
+                title="Navegación 3D Inmersiva: Cámara de seguimiento vehicular">
                 <i class="fa-solid fa-car-side text-cyan"></i> <span>Navegación 3D</span>
-              </button>
-              <button class="scope-btn btn-my-gps" id="scope-btn-my-gps" title="Ubicar Mi Dispositivo Actual (GPS)">
-                <i class="fa-solid fa-location-arrow"></i> <span>Mi GPS</span>
               </button>
             </div>
           </div>
@@ -718,7 +674,8 @@
 
         <!-- Banner de Navegación 3D Turn-by-Turn -->
         <div class="nav-turn-hud hidden" id="nav-turn-hud">
-          <button class="hud-close-x-btn" onclick="document.getElementById('nav-turn-hud').classList.toggle('hidden')" title="Cerrar aviso de navegación">
+          <button class="hud-close-x-btn" onclick="document.getElementById('nav-turn-hud').classList.toggle('hidden')"
+            title="Cerrar aviso de navegación">
             <i class="fa-solid fa-xmark"></i>
           </button>
           <div class="nav-turn-left">
@@ -752,7 +709,8 @@
             <button class="btn-nav-audio" id="btn-toggle-nav-voice" title="Instrucciones de voz desactivadas">
               <i class="fa-solid fa-volume-xmark text-muted" id="nav-voice-icon"></i>
             </button>
-            <button class="btn-nav-preview" id="btn-open-dest-preview" title="Previsualizar Edificio de Destino y Acceso">
+            <button class="btn-nav-preview" id="btn-open-dest-preview"
+              title="Previsualizar Edificio de Destino y Acceso">
               <i class="fa-solid fa-building-circle-check"></i> <span>Destino 3D</span>
             </button>
           </div>
@@ -760,7 +718,8 @@
 
         <!-- Floating Geo-Orientation HUD Card -->
         <div class="geo-orientation-hud hidden" id="geo-orientation-hud">
-          <button class="hud-mini-close-x" onclick="document.getElementById('geo-orientation-hud').classList.toggle('hidden')" title="Ocultar">
+          <button class="hud-mini-close-x"
+            onclick="document.getElementById('geo-orientation-hud').classList.toggle('hidden')" title="Ocultar">
             <i class="fa-solid fa-xmark"></i>
           </button>
           <div class="geo-badge">
@@ -775,7 +734,9 @@
 
         <!-- Simulation Toolbar on Bottom of Map -->
         <div class="sim-floating-bar hidden" id="sim-control-bar">
-          <button class="sim-close-x-btn" onclick="document.getElementById('sim-control-bar').classList.toggle('hidden')" title="Minimizar barra de simulación">
+          <button class="sim-close-x-btn"
+            onclick="document.getElementById('sim-control-bar').classList.toggle('hidden')"
+            title="Minimizar barra de simulación">
             <i class="fa-solid fa-xmark"></i>
           </button>
           <div class="sim-meta">
@@ -790,8 +751,8 @@
               <i class="fa-solid fa-rotate-left"></i>
             </button>
             <button class="sim-danger-btn" id="sim-force-deviation-btn"
-              title="Simular que el vehículo dobla por calle prohibida">
-              <i class="fa-solid fa-arrow-turn-right"></i> Simular desvío ahora
+              title="Simular que el vehículo se desvía a la vereda o pastizal (Alerta Accidente)">
+              <i class="fa-solid fa-triangle-exclamation"></i> Simular despiste a vereda/pastizal
             </button>
           </div>
           <div class="sim-speed-box">
@@ -800,54 +761,85 @@
           </div>
         </div>
 
-        <!-- Bottom Micro Dock (Estilo satellitemap.space) -->
+        <!-- Bottom Tactical Status Dock -->
         <div class="satellitemap-micro-dock" id="satellitemap-micro-dock">
-          <button class="micro-dock-btn" id="dock-btn-recenter" title="Re-centrar en Vehículo">
-            <i class="fa-solid fa-house"></i>
+          <!-- 1. Modo 3D del Globo (Segmented Micro-Pill) -->
+          <div class="tactical-segmented-pill" title="Alternar Modo 3D: Táctico / Realista">
+            <button class="tactical-pill-opt" id="btn-hud-mode-tactical" onclick="setGlobeModeExplicit('dark')" title="3D Táctico Cyber AITUE">
+              <i class="fa-solid fa-shield-halved"></i>
+            </button>
+            <button class="tactical-pill-opt active" id="btn-hud-mode-real" onclick="setGlobeModeExplicit('light')" title="3D Realista Satelital">
+              <i class="fa-solid fa-earth-americas"></i>
+            </button>
+          </div>
+
+          <div class="tactical-dock-sep"></div>
+
+          <!-- 2. Ciclo Solar (Flyout Desplegable Oculto) -->
+          <div class="tactical-flyout-wrap">
+            <button class="tactical-dock-icon" id="dock-btn-solar-toggle" title="Simulación Solar (Día / Noche / En Vivo)">
+              <i class="fa-solid fa-sun" id="dock-solar-icon-main"></i>
+            </button>
+            <!-- Popover Solar Táctico Flotante -->
+            <div class="tactical-solar-card hidden" id="dock-solar-popover">
+              <div class="tactical-card-head">
+                <span class="tactical-card-title"><i class="fa-solid fa-sun text-cyan"></i> SIMULACIÓN SOLAR</span>
+                <button class="tactical-card-x" id="btn-close-solar-popover" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <div class="tactical-presets-grid">
+                <button class="tactical-btn-preset" id="btn-solar-day" title="14:00 UTC - Día pleno">
+                  <i class="fa-solid fa-sun"></i> <span>DÍA</span>
+                </button>
+                <button class="tactical-btn-preset" id="btn-solar-night" title="02:00 UTC - Noche">
+                  <i class="fa-solid fa-moon"></i> <span>NOCHE</span>
+                </button>
+                <button class="tactical-btn-preset active" id="btn-solar-live" title="Hora UTC en vivo">
+                  <i class="fa-solid fa-satellite sat-pulse-icon"></i> <span>EN VIVO</span>
+                </button>
+              </div>
+              <div class="tactical-slider-row">
+                <input type="range" id="solar-time-slider" min="0" max="24" step="0.25" value="14" class="tactical-range" title="Ajuste manual de hora">
+                <span class="tactical-slider-val font-mono" id="solar-hour-display">14:00 UTC</span>
+              </div>
+              <div class="tactical-check-group">
+                <label class="tactical-chk"><input type="checkbox" id="chk-city-lights" checked> <span>Luces Nocturnas</span></label>
+                <label class="tactical-chk"><input type="checkbox" id="chk-bright-night" checked> <span>Noche Clara</span></label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Red Satelital AITUE -->
+          <button class="tactical-dock-icon" id="dock-btn-toggle-satellites" title="Red Satelital AITUE (Mostrar/Ocultar)">
+            <i class="fa-solid fa-satellite-dish"></i>
           </button>
-          <button class="micro-dock-btn" id="dock-btn-gps" title="Ubicar Mi Dispositivo Actual (GPS)">
-            <i class="fa-solid fa-location-crosshairs text-cyan"></i>
+
+          <!-- 4. Sonar Radar Scan -->
+          <button class="tactical-dock-icon" id="dock-btn-sonar" title="Radar Sonar (Atajo: R)">
+            <i class="fa-solid fa-crosshairs"></i>
           </button>
-          <button class="micro-dock-btn" id="dock-btn-projection" title="Alternar Globo 3D / Mapa Plano">
-            <i class="fa-solid fa-earth-americas text-cyan"></i>
+
+          <!-- 5. PiP Mini Cámara -->
+          <button class="tactical-dock-icon" id="dock-btn-pip" title="Mini-Cámara PiP (Atajo: V)">
+            <i class="fa-solid fa-video"></i>
           </button>
-          <button class="micro-dock-btn" id="dock-btn-layers" title="Estilo de Mapa (Satelital / Oscuro / Claro)">
-            <i class="fa-solid fa-layer-group"></i>
+
+          <div class="tactical-dock-sep"></div>
+
+          <!-- 6. Atajos de Teclado -->
+          <button class="tactical-dock-icon" id="dock-btn-shortcuts" title="Atajos de Teclado (Atajo: ?)">
+            <i class="fa-solid fa-keyboard"></i>
           </button>
-          <button class="micro-dock-btn" id="dock-btn-theme" title="Modo Claro / Oscuro">
-            <i class="fa-solid fa-sun text-amber" id="dock-theme-icon"></i>
-          </button>
-          <button class="micro-dock-btn active" id="dock-btn-3d-bld" title="Activar/Desactivar Edificios 3D">
-            <i class="fa-solid fa-city text-cyan"></i>
-          </button>
-          <button class="micro-dock-btn active" id="dock-btn-bridges" title="Activar/Desactivar Puentes 3D">
-            <i class="fa-solid fa-archway text-cyan"></i>
-          </button>
-          <button class="micro-dock-btn" id="dock-btn-corridor" title="Pasillo de Ruta y Checkpoints">
-            <i class="fa-solid fa-route text-green"></i>
-          </button>
-          <button class="micro-dock-btn" id="dock-btn-zen" title="Modo Zen (Despejar Todo el Mapa)">
+
+          <!-- 7. Modo Despejar / Zen -->
+          <button class="tactical-dock-icon tactical-icon-zen" id="dock-btn-zen" title="Modo Despejar (Atajo: Z)">
             <i class="fa-solid fa-eye-slash" id="zen-icon"></i>
           </button>
-          <span class="micro-dock-fps">30 FPS</span>
-        </div>
 
-        <!-- Bottom UTC & Simulation Bar (Estilo satellitemap.space) -->
-        <div class="satellitemap-utc-bar" id="satellitemap-utc-bar">
-          <div class="utc-clock" id="sat-utc-clock">09/10/26 13:18:22 UTC</div>
-          <div class="utc-controls">
-            <button class="utc-btn" id="btn-utc-rw" title="Velocidad normal"><i class="fa-solid fa-backward-fast"></i></button>
-            <button class="utc-btn" id="btn-utc-prev" title="Paso atrás"><i class="fa-solid fa-backward-step"></i></button>
-            <button class="utc-btn active" id="btn-utc-play" title="Pausar / Reanudar"><i class="fa-solid fa-pause" id="utc-play-icon"></i></button>
-            <button class="utc-btn" id="btn-utc-next" title="Paso adelante"><i class="fa-solid fa-forward-step"></i></button>
-            <button class="utc-btn" id="btn-utc-ff" title="Acelerar 2x"><i class="fa-solid fa-forward-fast"></i></button>
-            <span class="utc-speed-pill" id="utc-speed-indicator">1x</span>
-          </div>
-          <button class="utc-bar-close" onclick="document.getElementById('satellitemap-utc-bar').classList.toggle('minimized')" title="Minimizar">
-            <i class="fa-solid fa-chevron-down"></i>
-          </button>
-        </div>
-      </div>
+          <div class="tactical-dock-sep"></div>
+
+          <!-- 8. Micro Telemetría UTC -->
+          <span class="tactical-mini-clock font-mono" id="sat-utc-clock" title="Reloj UTC orbital">--:--:-- UTC</span>
+        </div></div>
     </section>
 
     <!-- RIGHT SIDEBAR: Spy Cam Feed, Telemetry Readouts & Live Alerts Stream (Drawer Desplegable) -->
@@ -857,7 +849,8 @@
           <i class="fa-solid fa-gauge-high text-cyan"></i>
           <span class="drawer-title" id="drawer-right-title">Telemetría y Cámara</span>
         </div>
-        <button class="drawer-close-btn" id="btn-close-drawer-right" onclick="closeAllDrawers()" title="Cerrar panel y despejar mapa">
+        <button class="drawer-close-btn" id="btn-close-drawer-right" onclick="closeAllDrawers()"
+          title="Cerrar panel y despejar mapa">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -870,7 +863,8 @@
             <h3>Cámara de seguridad</h3>
           </div>
           <div class="cam-header-tools">
-            <button class="cam-solo-btn" id="btn-cam-expand-solo" title="Despejar interfaz y ver solo la cámara a pantalla completa">
+            <button class="cam-solo-btn" id="btn-cam-expand-solo"
+              title="Despejar interfaz y ver solo la cámara a pantalla completa">
               <i class="fa-solid fa-expand"></i> <span>Solo cámara</span>
             </button>
             <span class="live-rec-badge"><i class="fa-solid fa-circle"></i> REC</span>
@@ -928,7 +922,8 @@
       <div class="cockpit-hud-card">
         <div class="panel-header">
           <h3><i class="fa-solid fa-compass-drafting text-cyan"></i> Cabina HUD • Telemetría</h3>
-          <span class="signal-badge" id="gps-sat-signal"><i class="fa-solid fa-satellite text-cyan"></i> Starlink LEO 23ms</span>
+          <span class="signal-badge" id="gps-sat-signal"><i class="fa-solid fa-satellite text-cyan"></i> Starlink LEO
+            23ms</span>
         </div>
 
         <!-- Cockpit Instruments Dual Cluster -->
@@ -1017,7 +1012,7 @@
     </aside>
 
   </main>
-  
+
   <!-- Backdrop desenfocado para cerrar drawers al tocar fuera -->
   <div class="drawer-backdrop" id="drawer-backdrop" onclick="closeAllDrawers()"></div>
 
@@ -1145,7 +1140,8 @@
       </div>
       <div class="modal-body">
         <p class="modal-desc">
-          Código listo para compilar en <b>Arduino IDE</b> o <b>PlatformIO</b>. Conecta tu ESP32 con sensor PIR HC-SR501 y radar mmWave LD2410 al WiFi y transmite telemetría JSON en tiempo real a este panel.
+          Código listo para compilar en <b>Arduino IDE</b> o <b>PlatformIO</b>. Conecta tu ESP32 con sensor PIR HC-SR501
+          y radar mmWave LD2410 al WiFi y transmite telemetría JSON en tiempo real a este panel.
         </p>
 
         <div class="code-copy-bar">
@@ -1155,7 +1151,8 @@
           </button>
         </div>
 
-        <pre class="esp32-code-block" id="esp32-code-pre"><code id="esp32-code-text">// Firmware Arduino ESP32 cargando...</code></pre>
+        <pre class="esp32-code-block"
+          id="esp32-code-pre"><code id="esp32-code-text">// Firmware Arduino ESP32 cargando...</code></pre>
       </div>
       <div class="modal-footer">
         <button class="btn-tactical btn-secondary" id="btn-close-esp32-code-footer">Cerrar</button>
@@ -1209,7 +1206,8 @@
       </div>
 
       <div class="modal-footer dest-card-footer">
-        <span class="dest-note"><i class="fa-solid fa-circle-info text-cyan"></i> La navegación inmersiva 3D guía al vehículo directo al carril de ingreso autorizado.</span>
+        <span class="dest-note"><i class="fa-solid fa-circle-info text-cyan"></i> La navegación inmersiva 3D guía al
+          vehículo directo al carril de ingreso autorizado.</span>
         <button class="btn-tactical btn-primary" id="btn-dest-ack">
           <i class="fa-solid fa-check"></i> Entendido
         </button>
@@ -1217,69 +1215,99 @@
     </div>
   </div>
 
-  <!-- Modal de Inspección 3D de Puentes y Viaductos -->
-  <div class="modal-overlay" id="bridge-preview-modal">
-    <div class="modal-card bridge-preview-card">
-      <div class="modal-header">
-        <div class="bridge-card-title">
-          <i class="fa-solid fa-archway text-cyan"></i>
-          <div>
-            <h3 id="bridge-modal-name">Puente elevado &bull; Inspección estructural 3D</h3>
-            <p class="subtitle" id="bridge-modal-subtitle">Gálibo vial, capacidad de carga y detección de colisiones</p>
-          </div>
-        </div>
-        <button class="modal-close-btn" id="btn-close-bridge-preview">&times;</button>
-      </div>
 
-      <div class="modal-body">
-        <div class="bridge-visual-box">
-          <div class="bridge-hologram-grid"></div>
-          <div class="bridge-deck-graphic">
-            <div class="bridge-pillar left"></div>
-            <div class="bridge-span-road">
-              <div class="bridge-road-lane"></div>
-              <div class="bridge-veh-silhouette"><i class="fa-solid fa-truck-shield"></i></div>
-            </div>
-            <div class="bridge-pillar right"></div>
-            <div class="bridge-clearance-arrow">
-              <span>Gálibo libre: <b id="bridge-graphic-clearance">4.80 m</b></span>
-            </div>
-          </div>
-          <div class="bridge-badge-corner" id="bridge-type-badge">Viaducto reforzado clase A</div>
-          <div class="bridge-status-indicator"><span class="bridge-pulse-dot"></span> Vía habilitada</div>
-        </div>
-
-        <div class="bridge-info-grid">
-          <div class="bridge-info-item">
-            <span class="b-label">Estructura vial:</span>
-            <span class="b-val text-cyan" id="bridge-info-name">Puente Elevado Javier Prado</span>
-          </div>
-          <div class="bridge-info-item">
-            <span class="b-label">Gálibo vertical (Altura libre):</span>
-            <span class="b-val text-green" id="bridge-info-clearance">4.80 m (Apto para vehículo: 2.45m)</span>
-          </div>
-          <div class="bridge-info-item">
-            <span class="b-label">Capacidad máxima de carga:</span>
-            <span class="b-val text-cyan" id="bridge-info-load">45 Toneladas</span>
-          </div>
-          <div class="bridge-info-item">
-            <span class="b-label">Cámaras de tránsito:</span>
-            <span class="b-val text-green" id="bridge-info-cctv"><i class="fa-solid fa-video"></i> Enlace CCTV vial activo</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer bridge-card-footer">
-        <span class="bridge-note"><i class="fa-solid fa-shield-halved text-green"></i> Paso seguro garantizado: Altura y peso del convoy verificados dentro del rango de tolerancia.</span>
-        <button class="btn-tactical btn-primary" id="btn-bridge-ack">
-          <i class="fa-solid fa-check"></i> Confirmar cruce seguro
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- Fullscreen Tactical Perimeter Flash when Alert/Panic occurs -->
   <div class="tactical-sos-flash" id="tactical-sos-flash"></div>
+
+  <!-- FLOATING PICTURE-IN-PICTURE (PiP) SPY CAM MONITOR -->
+  <div class="floating-pip-cam hidden" id="floating-pip-cam">
+    <div class="pip-cam-header">
+      <div class="pip-cam-title">
+        <span class="live-rec-badge"><i class="fa-solid fa-circle"></i> REC</span>
+        <span class="pip-cam-id" id="pip-cam-id">CAM-ESP-01 // COVERT</span>
+      </div>
+      <div class="pip-cam-actions">
+        <button class="pip-tool-btn" id="pip-btn-expand" title="Ver en panel lateral"><i
+            class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
+        <button class="pip-tool-btn" id="pip-btn-close" title="Cerrar PiP (Atajo: V)"><i
+            class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+    <div class="pip-cam-screen">
+      <canvas id="pip-camera-canvas" width="280" height="158"></canvas>
+      <div class="pip-cam-hud">
+        <div class="pip-hud-top">
+          <span class="pip-stat-speed font-mono text-cyan" id="pip-hud-speed">48 KM/H</span>
+          <span class="pip-stat-mode text-green" id="pip-hud-mode">ÓPTICO</span>
+        </div>
+        <div class="pip-hud-bottom">
+          <span class="pip-stat-veh text-muted" id="pip-hud-veh">Rhino 01</span>
+          <span class="pip-stat-coords font-mono" id="pip-hud-coords">-34.603, -58.381</span>
+        </div>
+      </div>
+    </div>
+    <div class="pip-cam-bar">
+      <button class="pip-mode-mini active" onclick="setCamMode('normal')" title="Color">Color</button>
+      <button class="pip-mode-mini" onclick="setCamMode('night')" title="Nocturno">Verde</button>
+      <button class="pip-mode-mini" onclick="setCamMode('thermal')" title="Térmica">FLIR</button>
+      <button class="pip-mode-mini" onclick="setCamMode('lidar')" title="LiDAR">LiDAR</button>
+    </div>
+  </div>
+
+  <!-- MODAL: CENTRO DE COMANDOS Y ATAJOS TÁCTICOS -->
+  <div class="modal-overlay" id="shortcuts-modal">
+    <div class="modal-card shortcuts-modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-keyboard text-cyan"></i> Centro de Comandos y Atajos Tácticos</h3>
+        <button class="modal-close-btn" id="shortcuts-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Opera la plataforma con comandos de teclado militares de acceso instantáneo:</p>
+        <div class="shortcuts-grid">
+          <div class="shortcut-item">
+            <kbd>G</kbd>
+            <div class="sc-desc"><b>Alternar Proyección:</b> Cambia entre Globo 3D Orbital y Mapa Plano 2D.</div>
+          </div>
+          <div class="shortcut-item">
+            <kbd>T</kbd>
+            <div class="sc-desc"><b>Modo 3D:</b> Alterna entre 3D Táctico (Cyber azul) y 3D Realista NASA.</div>
+          </div>
+          <div class="shortcut-item">
+            <kbd>R</kbd> o <kbd>S</kbd>
+            <div class="sc-desc"><b>Sonar / Escaneo Radar:</b> Emite pulso de radar y telemetría de nodos activos.</div>
+          </div>
+          <div class="shortcut-item">
+            <kbd>V</kbd>
+            <div class="sc-desc"><b>Mini-Cámara PiP:</b> Abre/cierra la cámara de vigilancia flotante en pantalla.</div>
+          </div>
+          <div class="shortcut-item">
+            <kbd>C</kbd>
+            <div class="sc-desc"><b>Re-centrar Objetivo:</b> Enfoca la cámara instantáneamente en la unidad activa.
+            </div>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Z</kbd>
+            <div class="sc-desc"><b>Modo Zen / Limpio:</b> Oculta todos los paneles y HUDs para contemplación despejada.
+            </div>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Espacio</kbd>
+            <div class="sc-desc"><b>Pausa / Reanudar:</b> Detiene o continúa la simulación de flotas y tiempo.</div>
+          </div>
+          <div class="shortcut-item">
+            <kbd>?</kbd>
+            <div class="sc-desc"><b>Ayuda de Comandos:</b> Abre o cierra este panel de referencia.</div>
+          </div>
+        </div>
+        <div class="shortcuts-tip">
+          <i class="fa-solid fa-lightbulb text-amber"></i>
+          <span><b>Tip Táctico en 3D:</b> Selecciona un país del menú superior para volar cinemáticamente en órbita, o
+            haz doble clic para descender a las calles.</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -1287,7 +1315,7 @@
   <!-- World Political Borders GeoJSON Data -->
   <script src="data/world-geojson.js"></script>
   <!-- Main Application Logic -->
-  <script src="app.js?v=2.9"></script>
+  <script src="app.js?v=3.66"></script>
 </body>
 
 </html>

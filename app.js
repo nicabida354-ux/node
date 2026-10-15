@@ -108,6 +108,7 @@ function playTacticalClick() {
 const state = {
   activeTab: 'vehicles',
   selectedVehicleId: 'VEH-01',
+  selectedCountryCode: 'USA',
   camMode: 'normal',
   isSimulating: true,
   simSpeedMultiplier: 1,
@@ -286,40 +287,222 @@ const TILE_CONFIG = {
 
 // Global Country Coordinates & Hubs for instant worldwide navigation
 const GLOBAL_COUNTRIES = {
-  ARG: { code: 'ARG', name: 'Argentina', flag: '🇦🇷', capital: 'Buenos Aires', lat: -34.6037, lng: -58.3816, zoom: 13, continent: 'Sudamérica' },
-  BRA: { code: 'BRA', name: 'Brasil', flag: '🇧🇷', capital: 'São Paulo / Brasilia', lat: -23.5505, lng: -46.6333, zoom: 12, continent: 'Sudamérica' },
-  CHL: { code: 'CHL', name: 'Chile', flag: '🇨🇱', capital: 'Santiago', lat: -33.4489, lng: -70.6693, zoom: 13, continent: 'Sudamérica' },
-  URY: { code: 'URY', name: 'Uruguay', flag: '🇺🇾', capital: 'Montevideo', lat: -34.9011, lng: -56.1645, zoom: 13, continent: 'Sudamérica' },
-  PRY: { code: 'PRY', name: 'Paraguay', flag: '🇵🇾', capital: 'Asunción', lat: -25.2637, lng: -57.5759, zoom: 13, continent: 'Sudamérica' },
-  BOL: { code: 'BOL', name: 'Bolivia', flag: '🇧🇴', capital: 'La Paz / Sucre', lat: -16.5000, lng: -68.1500, zoom: 13, continent: 'Sudamérica' },
-  PER: { code: 'PER', name: 'Perú', flag: '🇵🇪', capital: 'Lima', lat: -12.0464, lng: -77.0428, zoom: 13, continent: 'Sudamérica' },
-  ECU: { code: 'ECU', name: 'Ecuador', flag: '🇪🇨', capital: 'Quito', lat: -0.1807, lng: -78.4678, zoom: 13, continent: 'Sudamérica' },
-  COL: { code: 'COL', name: 'Colombia', flag: '🇨🇴', capital: 'Bogotá', lat: 4.7110, lng: -74.0721, zoom: 13, continent: 'Sudamérica' },
-  VEN: { code: 'VEN', name: 'Venezuela', flag: '🇻🇪', capital: 'Caracas', lat: 10.4806, lng: -66.9036, zoom: 13, continent: 'Sudamérica' },
-  PAN: { code: 'PAN', name: 'Panamá', flag: '🇵🇦', capital: 'Ciudad de Panamá', lat: 8.9824, lng: -79.5199, zoom: 13, continent: 'Centroamérica' },
-  CRI: { code: 'CRI', name: 'Costa Rica', flag: '🇨🇷', capital: 'San José', lat: 9.9281, lng: -84.0907, zoom: 13, continent: 'Centroamérica' },
-  MEX: { code: 'MEX', name: 'México', flag: '🇲🇽', capital: 'Ciudad de México', lat: 19.4326, lng: -99.1332, zoom: 13, continent: 'Norteamérica' },
-  USA: { code: 'USA', name: 'Estados Unidos', flag: '🇺🇸', capital: 'Washington / Miami', lat: 25.7617, lng: -80.1918, zoom: 13, continent: 'Norteamérica' },
-  CAN: { code: 'CAN', name: 'Canadá', flag: '🇨🇦', capital: 'Toronto / Ottawa', lat: 43.6532, lng: -79.3832, zoom: 13, continent: 'Norteamérica' },
-  ESP: { code: 'ESP', name: 'España', flag: '🇪🇸', capital: 'Madrid', lat: 40.4168, lng: -3.7038, zoom: 13, continent: 'Europa' },
-  FRA: { code: 'FRA', name: 'Francia', flag: '🇫🇷', capital: 'París', lat: 48.8566, lng: 2.3522, zoom: 13, continent: 'Europa' },
-  DEU: { code: 'DEU', name: 'Alemania', flag: '🇩🇪', capital: 'Berlín', lat: 52.5200, lng: 13.4050, zoom: 13, continent: 'Europa' },
-  ITA: { code: 'ITA', name: 'Italia', flag: '🇮🇹', capital: 'Roma', lat: 41.9028, lng: 12.4964, zoom: 13, continent: 'Europa' },
-  GBR: { code: 'GBR', name: 'Reino Unido', flag: '🇬🇧', capital: 'Londres', lat: 51.5074, lng: -0.1278, zoom: 13, continent: 'Europa' },
-  PRT: { code: 'PRT', name: 'Portugal', flag: '🇵🇹', capital: 'Lisboa', lat: 38.7223, lng: -9.1393, zoom: 13, continent: 'Europa' },
-  RUS: { code: 'RUS', name: 'Rusia', flag: '🇷🇺', capital: 'Moscú', lat: 55.7558, lng: 37.6173, zoom: 12, continent: 'Eurasia' },
-  CHN: { code: 'CHN', name: 'China', flag: '🇨🇳', capital: 'Pekín', lat: 39.9042, lng: 116.4074, zoom: 12, continent: 'Asia' },
-  JPN: { code: 'JPN', name: 'Japón', flag: '🇯🇵', capital: 'Tokio', lat: 35.6762, lng: 139.6503, zoom: 13, continent: 'Asia' },
-  IND: { code: 'IND', name: 'India', flag: '🇮🇳', capital: 'Nueva Delhi', lat: 28.6139, lng: 77.2090, zoom: 12, continent: 'Asia' },
-  AUS: { code: 'AUS', name: 'Australia', flag: '🇦🇺', capital: 'Sídney / Canberra', lat: -33.8688, lng: 151.2093, zoom: 13, continent: 'Oceanía' },
-  ZAF: { code: 'ZAF', name: 'Sudáfrica', flag: '🇿🇦', capital: 'Pretoria', lat: -25.7479, lng: 28.2293, zoom: 12, continent: 'África' },
-  EGY: { code: 'EGY', name: 'Egipto', flag: '🇪🇬', capital: 'El Cairo', lat: 30.0444, lng: 31.2357, zoom: 12, continent: 'África' }
+  USA: { code: 'USA', name: 'Estados Unidos', flag: '🇺🇸', capital: 'Nueva York / Manhattan', cityName: 'Manhattan', lat: 40.7128, lng: -74.0060, zoom: 13, continent: 'Norteamérica' },
+  ARG: { code: 'ARG', name: 'Argentina', flag: '🇦🇷', capital: 'Buenos Aires', cityName: 'Buenos Aires', lat: -34.6037, lng: -58.3816, zoom: 13, continent: 'Sudamérica' },
+  BRA: { code: 'BRA', name: 'Brasil', flag: '🇧🇷', capital: 'São Paulo', cityName: 'São Paulo', lat: -23.5505, lng: -46.6333, zoom: 12, continent: 'Sudamérica' },
+  CHL: { code: 'CHL', name: 'Chile', flag: '🇨🇱', capital: 'Santiago', cityName: 'Santiago', lat: -33.4489, lng: -70.6693, zoom: 13, continent: 'Sudamérica' },
+  URY: { code: 'URY', name: 'Uruguay', flag: '🇺🇾', capital: 'Montevideo', cityName: 'Montevideo', lat: -34.9011, lng: -56.1645, zoom: 13, continent: 'Sudamérica' },
+  PRY: { code: 'PRY', name: 'Paraguay', flag: '🇵🇾', capital: 'Asunción', cityName: 'Asunción', lat: -25.2637, lng: -57.5759, zoom: 13, continent: 'Sudamérica' },
+  BOL: { code: 'BOL', name: 'Bolivia', flag: '🇧🇴', capital: 'La Paz / Sucre', cityName: 'La Paz', lat: -16.5000, lng: -68.1500, zoom: 13, continent: 'Sudamérica' },
+  PER: { code: 'PER', name: 'Perú', flag: '🇵🇪', capital: 'Lima', cityName: 'Lima', lat: -12.0464, lng: -77.0428, zoom: 13, continent: 'Sudamérica' },
+  ECU: { code: 'ECU', name: 'Ecuador', flag: '🇪🇨', capital: 'Quito', cityName: 'Quito', lat: -0.1807, lng: -78.4678, zoom: 13, continent: 'Sudamérica' },
+  COL: { code: 'COL', name: 'Colombia', flag: '🇨🇴', capital: 'Bogotá', cityName: 'Bogotá', lat: 4.7110, lng: -74.0721, zoom: 13, continent: 'Sudamérica' },
+  VEN: { code: 'VEN', name: 'Venezuela', flag: '🇻🇪', capital: 'Caracas', cityName: 'Caracas', lat: 10.4806, lng: -66.9036, zoom: 13, continent: 'Sudamérica' },
+  PAN: { code: 'PAN', name: 'Panamá', flag: '🇵🇦', capital: 'Ciudad de Panamá', cityName: 'Ciudad de Panamá', lat: 8.9824, lng: -79.5199, zoom: 13, continent: 'Centroamérica' },
+  CRI: { code: 'CRI', name: 'Costa Rica', flag: '🇨🇷', capital: 'San José', cityName: 'San José', lat: 9.9281, lng: -84.0907, zoom: 13, continent: 'Centroamérica' },
+  MEX: { code: 'MEX', name: 'México', flag: '🇲🇽', capital: 'Ciudad de México', cityName: 'Ciudad de México', lat: 19.4326, lng: -99.1332, zoom: 13, continent: 'Norteamérica' },
+  CAN: { code: 'CAN', name: 'Canadá', flag: '🇨🇦', capital: 'Toronto / Ottawa', cityName: 'Toronto', lat: 43.6532, lng: -79.3832, zoom: 13, continent: 'Norteamérica' },
+  ESP: { code: 'ESP', name: 'España', flag: '🇪🇸', capital: 'Madrid', cityName: 'Madrid', lat: 40.4168, lng: -3.7038, zoom: 13, continent: 'Europa' },
+  FRA: { code: 'FRA', name: 'Francia', flag: '🇫🇷', capital: 'París', cityName: 'París', lat: 48.8566, lng: 2.3522, zoom: 13, continent: 'Europa' },
+  DEU: { code: 'DEU', name: 'Alemania', flag: '🇩🇪', capital: 'Berlín', cityName: 'Berlín', lat: 52.5200, lng: 13.4050, zoom: 13, continent: 'Europa' },
+  ITA: { code: 'ITA', name: 'Italia', flag: '🇮🇹', capital: 'Roma', cityName: 'Roma', lat: 41.9028, lng: 12.4964, zoom: 13, continent: 'Europa' },
+  GBR: { code: 'GBR', name: 'Reino Unido', flag: '🇬🇧', capital: 'Londres', cityName: 'Londres', lat: 51.5074, lng: -0.1278, zoom: 13, continent: 'Europa' },
+  PRT: { code: 'PRT', name: 'Portugal', flag: '🇵🇹', capital: 'Lisboa', cityName: 'Lisboa', lat: 38.7223, lng: -9.1393, zoom: 13, continent: 'Europa' },
+  RUS: { code: 'RUS', name: 'Rusia', flag: '🇷🇺', capital: 'Moscú', cityName: 'Moscú', lat: 55.7558, lng: 37.6173, zoom: 12, continent: 'Eurasia' },
+  CHN: { code: 'CHN', name: 'China', flag: '🇨🇳', capital: 'Pekín', cityName: 'Pekín', lat: 39.9042, lng: 116.4074, zoom: 12, continent: 'Asia' },
+  JPN: { code: 'JPN', name: 'Japón', flag: '🇯🇵', capital: 'Tokio', cityName: 'Tokio', lat: 35.6762, lng: 139.6503, zoom: 13, continent: 'Asia' },
+  IND: { code: 'IND', name: 'India', flag: '🇮🇳', capital: 'Nueva Delhi', cityName: 'Nueva Delhi', lat: 28.6139, lng: 77.2090, zoom: 12, continent: 'Asia' },
+  AUS: { code: 'AUS', name: 'Australia', flag: '🇦🇺', capital: 'Sídney / Canberra', cityName: 'Sídney', lat: -33.8688, lng: 151.2093, zoom: 13, continent: 'Oceanía' },
+  ZAF: { code: 'ZAF', name: 'Sudáfrica', flag: '🇿🇦', capital: 'Pretoria', cityName: 'Ciudad del Cabo', lat: -33.9249, lng: 18.4241, zoom: 12, continent: 'África' },
+  EGY: { code: 'EGY', name: 'Egipto', flag: '🇪🇬', capital: 'El Cairo', cityName: 'El Cairo', lat: 30.0444, lng: 31.2357, zoom: 12, continent: 'África' }
 };
 
 let userGpsMarker = null;
 
 // --- 3D Globe & Orbital Navigation Engine (Three.js) ---
 const ARGENTINA_COORDS = { lat: -34.6037, lng: -58.3816 };
+
+// ============================================================================
+// CANVAS PIN & LABEL TEXTURE GENERATORS (REALISTA GOOGLE EARTH vs TÁCTICO CYBER)
+// ============================================================================
+function createRealisticPinCanvas() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 192;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 128, 192);
+
+  // 1. Sombra de contacto suave en la punta de la aguja sobre el terreno
+  const shadowGrad = ctx.createRadialGradient(64, 180, 2, 64, 180, 22);
+  shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.70)');
+  shadowGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0.25)');
+  shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = shadowGrad;
+  ctx.beginPath();
+  ctx.ellipse(66, 180, 19, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. Silueta exacta del pin rojo clásico de Google Maps / Google Earth
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(64, 62, 40, Math.PI * 0.85, Math.PI * 0.15, false);
+  ctx.quadraticCurveTo(86, 120, 64, 180); // Punta convergente en (64, 180)
+  ctx.quadraticCurveTo(42, 120, 23.8, 90.8);
+  ctx.closePath();
+
+  // Gradiente volumétrico rojo Google Earth (#ea4335)
+  const pinGrad = ctx.createRadialGradient(50, 48, 6, 64, 76, 52);
+  pinGrad.addColorStop(0, '#ff6e5e'); // Brillo superior
+  pinGrad.addColorStop(0.30, '#ea4335'); // Rojo Google Maps auténtico
+  pinGrad.addColorStop(0.75, '#c5221f');
+  pinGrad.addColorStop(1, '#901210'); // Borde sombreado
+  ctx.fillStyle = pinGrad;
+  ctx.fill();
+
+  // Borde sutil reflectante
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // 3. Orificio central oscuro característico del Pin Google Maps (como en la foto de referencia)
+  ctx.beginPath();
+  ctx.arc(64, 62, 15, 0, Math.PI * 2);
+  const centerGrad = ctx.createRadialGradient(62, 60, 2, 64, 62, 15);
+  centerGrad.addColorStop(0, '#751110');
+  centerGrad.addColorStop(0.7, '#590a09');
+  centerGrad.addColorStop(1, '#3b0606');
+  ctx.fillStyle = centerGrad;
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+
+  ctx.restore();
+  return canvas;
+}
+
+function createRealisticLabelCanvas(text) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 512, 128);
+
+  // Tipografía idéntica a Google Earth: Sans-serif limpia, moderna y elegante
+  ctx.font = '600 46px "Product Sans", "Google Sans", "Segoe UI", Roboto, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Sombra de contraste suave pero profunda para legibilidad total contra océanos y continentes
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.90)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 2;
+
+  // Delineado fino envolvente de 3.5px
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+  ctx.lineWidth = 3.5;
+  ctx.lineJoin = 'round';
+  ctx.strokeText(text, 256, 64);
+
+  // Relleno blanco puro brillante
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(text, 256, 64);
+
+  return canvas;
+}
+
+function createTacticalPinCanvas() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 192;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 128, 192);
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 240, 255, 0.95)';
+  ctx.shadowBlur = 16;
+
+  ctx.beginPath();
+  ctx.moveTo(64, 24);
+  ctx.lineTo(108, 68);
+  ctx.lineTo(64, 180);
+  ctx.lineTo(20, 68);
+  ctx.closePath();
+
+  ctx.fillStyle = 'rgba(0, 240, 255, 0.22)';
+  ctx.fill();
+  ctx.strokeStyle = '#00f0ff';
+  ctx.lineWidth = 3.0;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(64, 46);
+  ctx.lineTo(88, 68);
+  ctx.lineTo(64, 106);
+  ctx.lineTo(40, 68);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0, 240, 255, 0.85)';
+  ctx.fill();
+
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2.0;
+  ctx.beginPath();
+  ctx.moveTo(64, 54);
+  ctx.lineTo(64, 82);
+  ctx.moveTo(50, 68);
+  ctx.lineTo(78, 68);
+  ctx.stroke();
+
+  ctx.restore();
+  return canvas;
+}
+
+function createTacticalLabelCanvas(title, coordsText) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 140;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 512, 140);
+
+  ctx.fillStyle = 'rgba(3, 7, 18, 0.88)';
+  ctx.strokeStyle = 'rgba(0, 240, 255, 0.65)';
+  ctx.lineWidth = 2.0;
+  ctx.shadowColor = 'rgba(0, 240, 255, 0.50)';
+  ctx.shadowBlur = 10;
+
+  const w = 480;
+  const h = 104;
+  const x = 16;
+  const y = 18;
+
+  ctx.beginPath();
+  ctx.moveTo(x + 16, y);
+  ctx.lineTo(x + w - 16, y);
+  ctx.lineTo(x + w, y + 16);
+  ctx.lineTo(x + w, y + h - 16);
+  ctx.lineTo(x + w - 16, y + h);
+  ctx.lineTo(x + 16, y + h);
+  ctx.lineTo(x, y + h - 16);
+  ctx.lineTo(x, y + 16);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+  ctx.textAlign = 'center';
+  ctx.font = '900 34px "JetBrains Mono", Consolas, monospace';
+  ctx.fillStyle = '#00f0ff';
+  ctx.fillText('TARGET // ' + title.toUpperCase(), 256, 56);
+
+  ctx.font = '600 20px "JetBrains Mono", Consolas, monospace';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText(coordsText || 'AITUE TELEMETRY LOCK', 256, 94);
+
+  return canvas;
+}
 
 function latLngToVector3(lat, lng, radius = 5.0) {
   const phi = (90 - lat) * (Math.PI / 180);
@@ -770,7 +953,7 @@ const Globe3D = {
   animId: null,
   isDescending: false,
   isInitialized: false,
-  globeTextureMode: 'dark',
+  globeTextureMode: 'light',
   cachedTextures: {},
   nasaTextures: null,
   cloudsMesh: null,
@@ -782,26 +965,45 @@ const Globe3D = {
 
   updateSunPosition() {
     if (!this.sunLight) return;
+    const isReal = this.globeTextureMode === 'light' || (typeof document !== 'undefined' && document.body.classList.contains('globe-theme-realistic'));
+
+    if (isReal) {
+      // Modo Realista Google Earth: ILUMINACIÓN COMPLETA SIN PARTES OSCURAS
+      // La luz solar principal ilumina el hemisferio que mira la cámara con una suave elevación 3D
+      if (this.camera) {
+        const camDir = this.camera.position.clone().normalize();
+        const sunPos = camDir.clone().add(new THREE.Vector3(0.30, 0.45, 0.20)).normalize().multiplyScalar(35.0);
+        this.sunLight.position.copy(sunPos);
+        if (this.ambientLight) {
+          this.ambientLight.color.setHex(0xffffff);
+          this.ambientLight.intensity = 1.15;
+        }
+        this.sunLight.color.setHex(0xfffdf5);
+        this.sunLight.intensity = 1.85;
+      }
+      if (this.nightMesh) {
+        this.nightMesh.visible = false;
+      }
+      return;
+    }
+
+    // Modo Táctico: Luz cibernética azul
     const now = new Date();
     const liveUtcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
     const effectiveHours = this.solarManualHours !== null ? this.solarManualHours : liveUtcHours;
-
-    // A las 12:00 UTC el Sol está en longitud 0 (Greenwich). Cada hora = 15°
     const sunLng = -((effectiveHours - 12) * 15);
     const dayOfYear = Math.floor((now - new Date(Date.UTC(now.getUTCFullYear(), 0, 1))) / 86400000);
-    // Declinación estacional axial
     const declination = 23.44 * Math.sin(((dayOfYear - 80) * 2 * Math.PI) / 365.25);
     const sunPos = latLngToVector3(declination, sunLng, 32.0);
     this.sunLight.position.copy(sunPos);
-
-    if (this.nightMesh && this.nightMesh.material && this.nightMesh.material.uniforms) {
-      this.nightMesh.material.uniforms.sunDirection.value.copy(sunPos).normalize();
+    if (this.ambientLight) {
+      this.ambientLight.color.setHex(0x385070);
+      this.ambientLight.intensity = 0.70;
     }
-    if (this.atmosphereMesh && this.atmosphereMesh.material && this.atmosphereMesh.material.uniforms) {
-      this.atmosphereMesh.material.uniforms.sunDirection.value.copy(sunPos).normalize();
-    }
-    if (this.innerAtmosphereMesh && this.innerAtmosphereMesh.material && this.innerAtmosphereMesh.material.uniforms) {
-      this.innerAtmosphereMesh.material.uniforms.sunDirection.value.copy(sunPos).normalize();
+    this.sunLight.color.setHex(0x00f0ff);
+    this.sunLight.intensity = 1.60;
+    if (this.nightMesh) {
+      this.nightMesh.visible = false;
     }
   },
 
@@ -905,7 +1107,7 @@ const Globe3D = {
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.08;
       this.controls.enablePan = false; // Anchor orbit target to center of Earth (0, 0, 0)
-      this.controls.minDistance = 5.10; // Permite acercamiento fluido para inspeccionar de cerca sin saltos
+      this.controls.minDistance = 5.25; // Permite acercamiento fluido para inspeccionar de cerca sin saltos
       this.controls.maxDistance = 26.0;
       this.controls.rotateSpeed = 0.75;
       this.controls.zoomSpeed = 0.75;
@@ -919,24 +1121,16 @@ const Globe3D = {
         this.controls.autoRotate = false;
       });
 
-      // Actualizar coordenadas y detectar aproximación voluntaria a la superficie
+      // Actualizar coordenadas geográficas bajo el retículo central
       this.controls.addEventListener('change', () => {
         if (state.currentViewMode !== 'globe-3d') return;
-        const dist = this.camera.position.length();
-
-        // Solo descender si el usuario hace zoom pasando la atmósfera (< 5.12 unidades)
-        if (dist <= 5.12 && !this.isDescending) {
-          this.checkZoomDescent();
-          return;
-        }
-
         const ray = new THREE.Raycaster();
         ray.setFromCamera(new THREE.Vector2(0, 0), this.camera);
         const hits = ray.intersectObject(this.earthMesh);
         if (hits.length > 0) {
           const coords = vector3ToLatLng(hits[0].point, 5.0);
           const c = getClosestCountry(coords.lat, coords.lng);
-          state.selectedCountryCode = c.code || 'ARG';
+          state.selectedCountryCode = c.code || 'USA';
         }
       });
     }
@@ -1181,12 +1375,11 @@ const Globe3D = {
     this.initSatelliteSwarm();
     this.initSatelliteSwarmEvents();
 
-    // 9. Iluminación Día / Noche Equilibrada (idéntica entre modos táctico y realista)
-    this.ambientLight = new THREE.AmbientLight(0x385070, 0.52);
+    // 9. Iluminación Totalmente Radiante Estilo Google Earth (Cero partes oscuras)
+    this.ambientLight = new THREE.AmbientLight(0xffffff, 1.15);
     this.scene.add(this.ambientLight);
 
-    // Luz solar cálida direccional en el hemisferio diurno (2.40 de intensidad para día radiante)
-    this.sunLight = new THREE.DirectionalLight(0xfffaea, 2.40);
+    this.sunLight = new THREE.DirectionalLight(0xfffdf5, 1.85);
     this.scene.add(this.sunLight);
     this.updateSunPosition();
 
@@ -1239,32 +1432,32 @@ const Globe3D = {
               }
               state.selectedCountryCode = c.code || 'ARG';
               const solarStatus = getLocationDayNightStatus(c.lat, c.lng);
-              showNotification(`🎯 Enfoque Orbital: ${c.name} (${c.capital}) &bull; ${solarStatus.label}`, 'info');
-              return;
+              if (c) {
+                this.focusCity(c.cityName || c.capital || c.name, c.lat, c.lng, c.code);
+                return;
+              }
             }
           }
         }
 
-        // C. Clic en la Tierra: Actualiza selección geográfica sin salir del globo
+        // C. Clic en la Tierra: Vuelo cinemático y Pin en el punto exacto seleccionado
         const hits = raycaster.intersectObject(this.earthMesh);
         if (hits.length > 0) {
           const pt = hits[0].point;
           const coords = vector3ToLatLng(pt, 5.0);
           const c = getClosestCountry(coords.lat, coords.lng);
           const globeSelect = document.getElementById('globe-country-select');
-          if (globeSelect && c.code && GLOBAL_COUNTRIES[c.code]) {
+          if (globeSelect && c && c.code && GLOBAL_COUNTRIES[c.code]) {
             globeSelect.value = c.code;
           }
-          state.selectedCountryCode = c.code || 'ARG';
-          const solarStatus = getLocationDayNightStatus(c.lat, c.lng);
-          showNotification(`🌐 Coordenadas: ${c.name} &bull; ${solarStatus.label}`, 'info');
+          this.focusCity(c ? (c.cityName || c.capital || c.name) : 'Ubicación', coords.lat, coords.lng, c ? c.code : null);
         }
       }
     });
 
-    // Doble clic sobre la Tierra o país: Descender con suavidad al mapa de calles
+    // Doble clic sobre la Tierra, país o área: Vuelo cinemático elegante y fijación de Pin
     container.addEventListener('dblclick', (e) => {
-      if (state.currentViewMode !== 'globe-3d' || this.isDescending) return;
+      if (state.currentViewMode !== 'globe-3d') return;
       const rect = container.getBoundingClientRect();
       const m = new THREE.Vector2(
         ((e.clientX - rect.left) / rect.width) * 2 - 1,
@@ -1275,19 +1468,14 @@ const Globe3D = {
       const hits = ray.intersectObject(this.earthMesh);
       if (hits.length > 0) {
         const coords = vector3ToLatLng(hits[0].point, 5.0);
-        this.descendToCoords(coords.lat, coords.lng);
+        const c = getClosestCountry(coords.lat, coords.lng);
+        this.focusCity(c ? (c.cityName || c.capital || c.name) : 'Ubicación', coords.lat, coords.lng, c ? c.code : null);
       }
     });
 
-    // Rueda del ratón: Permite acercamiento fluido; solo sumerge al mapa si se traspasa la superficie (< 5.12)
+    // Rueda del ratón: Permite acercamiento orbital fluido sin salir nunca del modo 3D
     container.addEventListener('wheel', (e) => {
-      if (state.currentViewMode !== 'globe-3d' || this.isDescending) return;
-      if (e.deltaY < 0) { // Zooming inward
-        const dist = this.camera ? this.camera.position.length() : 15;
-        if (dist <= 5.12) {
-          this.checkZoomDescent({ x: e.clientX, y: e.clientY });
-        }
-      }
+      // Zoom orbital fluido controlado por OrbitControls
     }, { passive: true });
 
     // 11. Window & Container Resize Listeners (Responsive & Anti-Stretch)
@@ -1355,8 +1543,12 @@ const Globe3D = {
 
     const time = performance.now() * 0.001;
 
-    if (this.controls) {
+    if (this.controls && !this.flightAnimId) {
       this.controls.update();
+    }
+    if (this.activeCityMarker && this.activeCityMarker.groundRing) {
+      const pulse = 1.0 + 0.35 * Math.sin(time * 4.0);
+      this.activeCityMarker.groundRing.scale.set(pulse, pulse, 1);
     }
 
     // Rotación atmosférica continua de nubes reales NASA
@@ -1886,27 +2078,27 @@ const Globe3D = {
       this.innerAtmosphereMesh.visible = false;
     }
 
-    // Iluminación natural equilibrada (noche visible y realista con continentes y mares distinguibles)
+    // Iluminación radiante diurna Google Earth (Cero partes oscuras en modo realista)
     if (isRealistic) {
       if (this.ambientLight) {
-        this.ambientLight.color.setHex(0x32445e);
-        this.ambientLight.intensity = this.brightNightMode ? 0.62 : 0.52; // Noche realista: continentes y mares distinguibles
+        this.ambientLight.color.setHex(0xffffff);
+        this.ambientLight.intensity = 1.15;
       }
       if (this.sunLight) {
-        this.sunLight.color.setHex(0xfffaee);
-        this.sunLight.intensity = 1.95; // Sol suave natural sin quemar la superficie
+        this.sunLight.color.setHex(0xfffdf5);
+        this.sunLight.intensity = 1.85;
       }
       if (this.renderer) {
-        this.renderer.setClearColor(0x020408, 1);
+        this.renderer.setClearColor(0x010204, 1);
       }
     } else {
       if (this.ambientLight) {
         this.ambientLight.color.setHex(0x385070);
-        this.ambientLight.intensity = this.brightNightMode ? 0.58 : 0.42;
+        this.ambientLight.intensity = 0.70;
       }
       if (this.sunLight) {
-        this.sunLight.color.setHex(0xfffaea);
-        this.sunLight.intensity = 2.40;
+        this.sunLight.color.setHex(0x00f0ff);
+        this.sunLight.intensity = 1.60;
       }
       if (this.renderer) {
         this.renderer.setClearColor(0x030509, 1);
@@ -1914,11 +2106,7 @@ const Globe3D = {
     }
 
     if (this.nightMesh) {
-      this.nightMesh.visible = this.showCityLights;
-      if (this.nasaTextures && this.nasaTextures.nightMap && this.nightMesh.material.uniforms) {
-        this.nightMesh.material.uniforms.nightMap.value = this.nasaTextures.nightMap;
-        this.nightMesh.material.needsUpdate = true;
-      }
+      this.nightMesh.visible = false; // Sin mallas oscuras
     }
     this.updateSunPosition();
 
@@ -1954,29 +2142,308 @@ const Globe3D = {
     if (btnText) {
       btnText.innerText = isRealistic ? '3D Realista' : '3D Táctico AITUE';
     }
+    if (this.activeCity) {
+      this.setupActiveCityMarker(this.activeCity.cityName, this.activeCity.lat, this.activeCity.lng);
+    }
   },
 
   resetOrbit() {
     if (this.controls) {
       this.controls.enabled = true;
-      this.controls.autoRotate = true;
+      this.controls.autoRotate = false;
       this.controls.target.set(0, 0, 0);
     }
-    const c = GLOBAL_COUNTRIES[state.selectedCountryCode] || GLOBAL_COUNTRIES.ARG;
-    const targetPos = latLngToVector3(c.lat, c.lng, 15.2);
-    this.camera.position.set(targetPos.x, targetPos.y, targetPos.z);
-    this.camera.lookAt(0, 0, 0);
-    if (this.controls) {
-      this.controls.update();
-    }
+    const c = GLOBAL_COUNTRIES[state.selectedCountryCode] || GLOBAL_COUNTRIES.USA;
+    this.focusCity(c.cityName || c.capital || c.name, c.lat, c.lng, c.code);
     this.onResize();
-    const globeHUD = document.getElementById('globe-hud-overlay');
-    if (globeHUD) {
-      globeHUD.classList.remove('hud-hidden');
-      globeHUD.style.opacity = '1';
-      globeHUD.style.pointerEvents = 'auto';
+  },
+  setupActiveCityMarker(cityName, lat, lng) {
+    if (!this.scene) return;
+
+    if (!this.activeCityMarkerGroup) {
+      this.activeCityMarkerGroup = new THREE.Group();
+      this.scene.add(this.activeCityMarkerGroup);
     }
-  }
+
+    while (this.activeCityMarkerGroup.children.length > 0) {
+      const child = this.activeCityMarkerGroup.children[0];
+      this.activeCityMarkerGroup.remove(child);
+      if (child.material) {
+        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+        else child.material.dispose();
+      }
+      if (child.geometry) child.geometry.dispose();
+    }
+
+    const targetPos = latLngToVector3(lat, lng, 5.0);
+    const normal = targetPos.clone().normalize();
+    const isReal = this.globeTextureMode === 'light' || document.body.classList.contains('globe-theme-realistic');
+
+    this.activeCityMarker = {
+      cityName,
+      lat,
+      lng,
+      pinSprite: null,
+      labelSprite: null,
+      groundRing: null,
+      laserBeam: null
+    };
+
+    if (isReal) {
+      // --- MODO REALISTA: EXACTO AL FOTOGRAMA GOOGLE EARTH DE REFERENCIA ---
+      // 1. Pin Rojo Clásico
+      const pinCanvas = createRealisticPinCanvas();
+      const pinTex = new THREE.CanvasTexture(pinCanvas);
+      pinTex.minFilter = THREE.LinearFilter;
+      const pinMat = new THREE.SpriteMaterial({
+        map: pinTex,
+        depthTest: true,
+        depthWrite: false,
+        transparent: true,
+        opacity: 1.0
+      });
+      const pinSprite = new THREE.Sprite(pinMat);
+      pinSprite.scale.set(0.44, 0.66, 1.0);
+      pinSprite.center.set(0.5, 0.0625); // Punta en el suelo exacto r=5.0
+      pinSprite.position.copy(targetPos);
+      this.activeCityMarkerGroup.add(pinSprite);
+      this.activeCityMarker.pinSprite = pinSprite;
+
+      // 2. Etiqueta Blanca Flotando DIRECTAMENTE ENCIMA de la Cabeza del Pin
+      const labelCanvas = createRealisticLabelCanvas(cityName);
+      const labelTex = new THREE.CanvasTexture(labelCanvas);
+      labelTex.minFilter = THREE.LinearFilter;
+      const labelMat = new THREE.SpriteMaterial({
+        map: labelTex,
+        depthTest: false,
+        transparent: true,
+        opacity: 1.0
+      });
+      const labelSprite = new THREE.Sprite(labelMat);
+      labelSprite.scale.set(1.40, 0.35, 1.0);
+      labelSprite.center.set(0.5, 0.5);
+      labelSprite.position.copy(targetPos.clone().add(normal.clone().multiplyScalar(0.72)));
+      this.activeCityMarkerGroup.add(labelSprite);
+      this.activeCityMarker.labelSprite = labelSprite;
+
+    } else {
+      // --- MODO TÁCTICO: BALIZA HOLOGRÁFICA CIAN + RETÍCULA DE RADAR ---
+      const ringGeo = new THREE.RingGeometry(0.045, 0.075, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0x00f0ff,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.90,
+        blending: THREE.AdditiveBlending
+      });
+      const groundRing = new THREE.Mesh(ringGeo, ringMat);
+      groundRing.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+      groundRing.position.copy(targetPos.clone().add(normal.clone().multiplyScalar(0.015)));
+      this.activeCityMarkerGroup.add(groundRing);
+      this.activeCityMarker.groundRing = groundRing;
+
+      const beamPts = [targetPos.clone(), targetPos.clone().add(normal.clone().multiplyScalar(0.55))];
+      const beamGeo = new THREE.BufferGeometry().setFromPoints(beamPts);
+      const beamMat = new THREE.LineBasicMaterial({
+        color: 0x00f0ff,
+        transparent: true,
+        opacity: 0.75,
+        blending: THREE.AdditiveBlending
+      });
+      const laserBeam = new THREE.Line(beamGeo, beamMat);
+      this.activeCityMarkerGroup.add(laserBeam);
+      this.activeCityMarker.laserBeam = laserBeam;
+
+      const tacPinCanvas = createTacticalPinCanvas();
+      const tacPinTex = new THREE.CanvasTexture(tacPinCanvas);
+      tacPinTex.minFilter = THREE.LinearFilter;
+      const tacPinMat = new THREE.SpriteMaterial({
+        map: tacPinTex,
+        depthTest: true,
+        depthWrite: false,
+        transparent: true,
+        opacity: 1.0,
+        blending: THREE.AdditiveBlending
+      });
+      const pinSprite = new THREE.Sprite(tacPinMat);
+      pinSprite.scale.set(0.44, 0.66, 1.0);
+      pinSprite.center.set(0.5, 0.0625);
+      pinSprite.position.copy(targetPos);
+      this.activeCityMarkerGroup.add(pinSprite);
+      this.activeCityMarker.pinSprite = pinSprite;
+
+      const coordsStr = `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lng).toFixed(1)}°${lng >= 0 ? 'E' : 'O'}`;
+      const tacLabelCanvas = createTacticalLabelCanvas(cityName, coordsStr);
+      const tacLabelTex = new THREE.CanvasTexture(tacLabelCanvas);
+      tacLabelTex.minFilter = THREE.LinearFilter;
+      const tacLabelMat = new THREE.SpriteMaterial({
+        map: tacLabelTex,
+        depthTest: false,
+        transparent: true,
+        opacity: 1.0
+      });
+      const labelSprite = new THREE.Sprite(tacLabelMat);
+      labelSprite.scale.set(1.45, 0.40, 1.0);
+      labelSprite.center.set(0.5, 0.5);
+      labelSprite.position.copy(targetPos.clone().add(normal.clone().multiplyScalar(0.72)));
+      this.activeCityMarkerGroup.add(labelSprite);
+      this.activeCityMarker.labelSprite = labelSprite;
+    }
+  },
+
+  focusCity(cityName, lat, lng, countryCode = null, callback = null) {
+    if (!this.camera || this.isDescending) return;
+
+    if (this.flightAnimId) {
+      cancelAnimationFrame(this.flightAnimId);
+      this.flightAnimId = null;
+    }
+
+    const c = (countryCode && GLOBAL_COUNTRIES[countryCode]) ? GLOBAL_COUNTRIES[countryCode] : getClosestCountry(lat, lng);
+    const resolvedCity = cityName || (c ? (c.cityName || c.capital || c.name) : 'Ubicación');
+    const resolvedCode = countryCode || (c ? c.code : null);
+    this.activeCity = { cityName: resolvedCity, lat, lng, code: resolvedCode };
+    if (resolvedCode) state.selectedCountryCode = resolvedCode;
+
+    const navCountrySelect = document.getElementById('nav-country-quick-select');
+    if (navCountrySelect && resolvedCode) {
+      navCountrySelect.value = resolvedCode;
+    }
+    const globeCountrySelect = document.getElementById('globe-country-select');
+    if (globeCountrySelect && resolvedCode) {
+      globeCountrySelect.value = resolvedCode;
+    }
+    if (this.updateBorders && resolvedCode) {
+      this.updateBorders(resolvedCode);
+    }
+
+    this.setupActiveCityMarker(resolvedCity, lat, lng);
+
+    const targetPos = latLngToVector3(lat, lng, 5.0);
+    const normal = targetPos.clone().normalize();
+
+    const upRef = Math.abs(normal.y) > 0.92 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
+    const east = new THREE.Vector3().crossVectors(normal, upRef).normalize();
+    const north = new THREE.Vector3().crossVectors(east, normal).normalize();
+
+    // Inclinación oblicua exacta al fotograma de referencia:
+    // Mirando desde el Sur-Sureste hacia el Norte-Noroeste con ~22.5° de inclinación
+    const pitchAngle = 0.38;
+    const camDir = new THREE.Vector3()
+      .copy(normal)
+      .multiplyScalar(Math.cos(pitchAngle))
+      .sub(north.clone().multiplyScalar(Math.sin(pitchAngle)))
+      .add(east.clone().multiplyScalar(0.08)) // Leve giro para que el norte apunte hacia las 11:00 como en el fotograma
+      .normalize();
+
+    const targetDist = 8.15; // Altitud continental con horizonte curvado
+    const targetCamPos = camDir.clone().multiplyScalar(targetDist);
+    // El punto de mira ubica la ciudad en el tercio inferior dejando el horizonte amplio arriba
+    const lookAtTarget = targetPos.clone().add(north.clone().multiplyScalar(0.40)).multiplyScalar(0.70);
+
+    const startPos = this.camera.position.clone();
+    const startDist = startPos.length();
+    const endDist = targetDist;
+    const startDir = startPos.clone().normalize();
+    const endDir = camDir.clone();
+
+    const angle = startDir.angleTo(endDir);
+    // Vuelo cinemático elegante y veloz: 680ms a 860ms
+    const duration = Math.max(680, Math.min(860, angle * 150 + 680));
+    const startTime = performance.now();
+
+    if (this.controls) {
+      this.controls.autoRotate = false;
+      this.controls.enabled = false;
+    }
+
+    const slerpUnit = (v1, v2, t) => {
+      const dot = Math.max(-1, Math.min(1, v1.dot(v2)));
+      const theta = Math.acos(dot);
+      if (theta < 0.001) return v1.clone().lerp(v2, t).normalize();
+      const sinTheta = Math.sin(theta);
+      const a = Math.sin((1 - t) * theta) / sinTheta;
+      const b = Math.sin(t * theta) / sinTheta;
+      return new THREE.Vector3(
+        a * v1.x + b * v2.x,
+        a * v1.y + b * v2.y,
+        a * v1.z + b * v2.z
+      ).normalize();
+    };
+
+    const isReal = this.globeTextureMode === 'light' || document.body.classList.contains('globe-theme-realistic');
+
+    const stepFlight = () => {
+      const elapsed = performance.now() - startTime;
+      const t = Math.min(1.0, elapsed / duration);
+      const ease = 1 - Math.pow(1 - t, 4);
+
+      const curDir = slerpUnit(startDir, endDir, ease);
+      const arcLift = Math.sin(t * Math.PI) * Math.min(2.5, angle * 1.3);
+      const curDist = THREE.MathUtils.lerp(startDist, endDist, ease) + arcLift;
+
+      this.camera.position.copy(curDir.multiplyScalar(curDist));
+      const curLookAt = new THREE.Vector3().lerpVectors(new THREE.Vector3(0, 0, 0), lookAtTarget, ease);
+      this.camera.lookAt(curLookAt);
+
+      if (this.activeCityMarker) {
+        if (t < 0.35) {
+          if (this.activeCityMarker.pinSprite) this.activeCityMarker.pinSprite.material.opacity = 0.15;
+          if (this.activeCityMarker.labelSprite) this.activeCityMarker.labelSprite.material.opacity = 0.0;
+        } else {
+          const pinT = (t - 0.35) / 0.65;
+          const bounce = Math.sin(pinT * Math.PI * 1.5) * Math.exp(-pinT * 3.5);
+          const dropHeight = Math.max(0, 0.75 * (1 - pinT) + bounce * 0.10);
+
+          if (this.activeCityMarker.pinSprite) {
+            const pinPos = targetPos.clone().add(normal.clone().multiplyScalar(dropHeight));
+            this.activeCityMarker.pinSprite.position.copy(pinPos);
+            this.activeCityMarker.pinSprite.material.opacity = Math.min(1.0, pinT * 2.0);
+          }
+          if (this.activeCityMarker.labelSprite) {
+            const labelPos = targetPos.clone().add(normal.clone().multiplyScalar(dropHeight + 0.72));
+            this.activeCityMarker.labelSprite.position.copy(labelPos);
+            this.activeCityMarker.labelSprite.material.opacity = Math.min(1.0, (pinT - 0.12) * 2.2);
+          }
+        }
+      }
+
+      if (t < 1.0) {
+        this.flightAnimId = requestAnimationFrame(stepFlight);
+      } else {
+        this.flightAnimId = null;
+        if (this.activeCityMarker) {
+          if (this.activeCityMarker.pinSprite) {
+            this.activeCityMarker.pinSprite.position.copy(targetPos);
+            this.activeCityMarker.pinSprite.material.opacity = 1.0;
+          }
+          if (this.activeCityMarker.labelSprite) {
+            this.activeCityMarker.labelSprite.position.copy(targetPos.clone().add(normal.clone().multiplyScalar(0.72)));
+            this.activeCityMarker.labelSprite.material.opacity = 1.0;
+          }
+        }
+        if (this.controls) {
+          this.controls.target.copy(lookAtTarget); // Mantener el encuadre exacto sin saltos
+          this.controls.update();
+          this.controls.enabled = true;
+        }
+        if (typeof callback === 'function') callback();
+      }
+    };
+
+    this.flightAnimId = requestAnimationFrame(stepFlight);
+
+    showNotification(
+      isReal ? `📍 Monitoreando ${resolvedCity} (${c ? c.name : ''}) en órbita` : `🎯 Vector táctico fijado: ${resolvedCity} [${lat.toFixed(2)}°, ${lng.toFixed(2)}°]`,
+      'info'
+    );
+  },
+
+  orbitToCoords(lat, lng, targetDist = 8.15, duration = 800, callback = null) {
+    const c = getClosestCountry(lat, lng);
+    return this.focusCity(c ? (c.cityName || c.capital || c.name) : 'Objetivo', lat, lng, c ? c.code : null, callback);
+  },
+
 };
 
 // --- Hybrid 3D Orbit <-> 2D Surface Transitions ---
@@ -2228,15 +2695,13 @@ function setGeoScope(scope) {
     return;
   }
 
-  // If currently in 3D Orbit mode and user selects a surface scope, descend to 2D
-  if (state.currentViewMode === 'globe-3d') {
-    let target = [curCountry.lat, curCountry.lng];
-    let zoom = 13;
-    if (scope === 'region') { target = [curCountry.lat, curCountry.lng]; zoom = 5; }
-    else if (scope === 'city') { target = [curCountry.lat, curCountry.lng]; zoom = 12; }
-    else if (scope === 'veh' && curVeh) { target = [curVeh.lat, curVeh.lng]; zoom = 15; }
-
-    Globe3D.descendToCoords(target[0], target[1], curCountry);
+  // If currently in 3D Orbit mode, perform cinematic focus with 3D pin without leaving 3D
+  if (state.currentViewMode === 'globe-3d' && typeof Globe3D !== 'undefined') {
+    if (scope === 'veh' && curVeh) {
+      Globe3D.focusCity(curVeh.name, curVeh.lat, curVeh.lng, curCountry ? curCountry.code : 'ARG');
+    } else {
+      Globe3D.focusCity(curCountry.cityName || curCountry.capital || curCountry.name, curCountry.lat, curCountry.lng, curCountry.code);
+    }
     return;
   }
 
@@ -3661,6 +4126,11 @@ function selectVehicle(vehId) {
   const veh = getSelectedVehicle();
   if (!veh) return;
 
+  // Si estamos en modo globo 3D, enfocar con Pin cinemático
+  if (document.body.classList.contains('mode-globe-active') && typeof Globe3D !== 'undefined' && Globe3D.focusCity) {
+    Globe3D.focusCity(veh.name, veh.lat, veh.lng, 'ARG');
+  }
+
   // Update center con animación suave y estable
   if (map) {
     map.panTo([veh.lat, veh.lng], { animate: true, duration: 0.8, easeLinearity: 0.25 });
@@ -4603,14 +5073,8 @@ function setupEventListeners() {
       }
 
       const c = GLOBAL_COUNTRIES[code];
-      if (c && Globe3D.camera) {
-        const targetPos = latLngToVector3(c.lat, c.lng, 12.0);
-        Globe3D.camera.position.set(targetPos.x, targetPos.y, targetPos.z);
-        Globe3D.camera.lookAt(0, 0, 0);
-        if (Globe3D.controls) {
-          Globe3D.controls.target.set(0, 0, 0);
-          Globe3D.controls.update();
-        }
+      if (c && typeof Globe3D !== 'undefined') {
+        Globe3D.focusCity(c.cityName || c.capital || c.name, c.lat, c.lng, c.code);
       }
     });
   }
@@ -5225,8 +5689,8 @@ function recenterOnVehicle() {
   playTacticalClick();
   const curVeh = getSelectedVehicle();
   if (!curVeh) return;
-  if (document.body.classList.contains('mode-globe-active')) {
-    Globe3D.descendToCoords(curVeh.lat, curVeh.lng);
+  if (document.body.classList.contains('mode-globe-active') && typeof Globe3D !== 'undefined') {
+    Globe3D.focusCity(curVeh.name, curVeh.lat, curVeh.lng, 'ARG');
   } else if (map) {
     map.flyTo([curVeh.lat, curVeh.lng], 15, { animate: true, duration: 1.2 });
     showNotification(`🎯 Re-centrado en ${curVeh.name} (${curVeh.plate})`, 'info');
@@ -5401,8 +5865,8 @@ function initSatellitemapComponents() {
       }
       if (GLOBAL_COUNTRIES && GLOBAL_COUNTRIES[code]) {
         const c = GLOBAL_COUNTRIES[code];
-        if (document.body.classList.contains('mode-globe-active')) {
-          Globe3D.descendToCoords(c.lat, c.lng, c);
+        if (document.body.classList.contains('mode-globe-active') && typeof Globe3D !== 'undefined') {
+          Globe3D.focusCity(c.cityName || c.capital || c.name, c.lat, c.lng, c.code);
         } else {
           transitionToSurface2D([c.lat, c.lng], c.zoom || 14, c);
         }
